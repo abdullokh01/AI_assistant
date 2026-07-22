@@ -112,6 +112,22 @@ export class TelegramBotService {
     }
   }
 
+  private async ensureSystemProject() {
+    const systemProjId = '00000000-0000-0000-0000-000000000000';
+    try {
+      await supabaseAdmin.from('projects').upsert({
+        id: systemProjId,
+        name: 'System Settings',
+        description: 'Global settings and Telegram sessions placeholder project',
+        status: 'active',
+        health_score: 100.00,
+        confidence_score: 100.00,
+      }, { onConflict: 'id' });
+    } catch (e) {
+      console.error('Failed to seed system project:', e);
+    }
+  }
+
   // Handle text messages
   private async handleMessage(message: any): Promise<void> {
     const chatId = message.chat.id;
@@ -125,6 +141,7 @@ export class TelegramBotService {
     // In production, we'll store session states under project settings or user metadata.
     // For simplicity, let's check a standard session state using settings table with projectId='00000000-0000-0000-0000-000000000000'
     const systemProjId = '00000000-0000-0000-0000-000000000000'; // Represents system settings
+    await this.ensureSystemProject();
     const sessionSetting = await this.settingsRepo.get(systemProjId, sessionKey);
     const sessionState = sessionSetting?.value || null;
 
@@ -197,6 +214,7 @@ export class TelegramBotService {
     } else if (data === 'project_new') {
       // Ask user to type name
       const systemProjId = '00000000-0000-0000-0000-000000000000';
+      await this.ensureSystemProject();
       await this.settingsRepo.save(systemProjId, `tg_session_${userId}`, {
         action: 'awaiting_project_name',
         ownerId: '00000000-0000-0000-0000-000000000000', // Assign to system user mock
