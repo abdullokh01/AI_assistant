@@ -45,23 +45,24 @@ export default function Home() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [dailyReportMarkdown, setDailyReportMarkdown] = useState<string>('');
 
-  // 1. Fetch available projects from Supabase on mount
+  // 1. Fetch available projects on mount via Server API (to bypass browser RLS constraints)
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const { data, error } = await supabase.from('projects').select('id, name');
-        if (data && data.length > 0) {
-          setProjectsList(data.map((p: any) => ({ id: p.id, name: `📁 ${p.name}` })));
-          setCurrentProjectId(data[0].id);
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        if (data.success && data.projects && data.projects.length > 0) {
+          setProjectsList(data.projects.map((p: any) => ({ id: p.id, name: `📁 ${p.name}` })));
+          setCurrentProjectId(data.projects[0].id);
         }
       } catch (e) {
-        console.warn('Could not load projects from Supabase. Operating in offline mode.');
+        console.warn('Could not load projects from Server API. Operating in offline mode.');
       }
     };
     fetchProjects();
   }, []);
 
-  // 2. Load Project Data (Supabase fetch only - no mock values)
+  // 2. Load Project Data (Supabase fetch via Server API - bypasses client RLS)
   const loadProjectData = async (projectId: string) => {
     if (!isUUID(projectId)) {
       setTasks([]);
@@ -76,133 +77,116 @@ export default function Home() {
       return;
     }
 
-    // REAL DATABASE FETCH (If projectId is a valid UUID)
     try {
-      // 1. Fetch project details
-      const { data: proj } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle();
-      if (proj) {
-        setHealthScore(Number(proj.health_score));
-        setConfidenceScore(Number(proj.confidence_score));
+      const res = await fetch(`/api/projects/details?projectId=${projectId}`);
+      const data = await res.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch project details');
       }
 
-      // 2. Fetch Tasks
-      const { data: dbTasks } = await supabase.from('tasks').select('*').eq('project_id', projectId);
-      if (dbTasks) {
-        setTasks(dbTasks.map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          status: t.status,
-          source: t.source,
-          dueDate: t.due_date ? new Date(t.due_date) : undefined,
-          labels: t.labels || [],
-        })));
+      // Update project metrics
+      if (data.project) {
+        setHealthScore(Number(data.project.health_score));
+        setConfidenceScore(Number(data.project.confidence_score));
       }
 
-      // 3. Fetch Emails
-      const { data: dbEmails } = await supabase.from('emails').select('*').eq('project_id', projectId).order('received_at', { ascending: false });
-      if (dbEmails) {
-        setEmails(dbEmails.map((e: any) => ({
-          id: e.id,
-          subject: e.subject,
-          fromName: e.from_name || e.from_email,
-          fromEmail: e.from_email,
-          body: e.body,
-          receivedAt: new Date(e.received_at),
-          classification: e.classification,
-          responseDraft: e.response_draft,
-          sentAt: e.sent_at ? new Date(e.sent_at) : undefined,
-        })));
-      }
+      // Update tasks
+      setTasks(data.tasks.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        status: t.status,
+        source: t.source,
+        dueDate: t.due_date ? new Date(t.due_date) : undefined,
+        labels: t.labels || [],
+      })));
 
-      // 4. Fetch Telegram Chat Configuration
-      const { data: dbChat } = await supabase.from('telegram_chats').select('*').eq('project_id', projectId).maybeSingle();
-      if (dbChat) {
+      // Update emails
+      setEmails(data.emails.map((e: any) => ({
+        id: e.id,
+        subject: e.subject,
+        fromName: e.from_name || e.from_email,
+        fromEmail: e.from_email,
+        body: e.body,
+        receivedAt: new Date(e.received_at),
+        classification: e.classification,
+        responseDraft: e.response_draft,
+        sentAt: e.sent_at ? new Date(e.sent_at) : undefined,
+      })));
+
+      // Update Telegram chat
+      if (data.telegramChat) {
         setTelegramChat({
-          id: dbChat.id,
-          projectId: dbChat.project_id,
-          chatId: Number(dbChat.chat_id),
-          title: dbChat.title,
-          isConnected: dbChat.is_connected,
-          syncStatus: dbChat.sync_status,
-          syncedAt: dbChat.synced_at ? new Date(dbChat.synced_at) : undefined,
+          id: data.telegramChat.id,
+          projectId: data.telegramChat.project_id,
+          chatId: Number(data.telegramChat.chat_id),
+          title: data.telegramChat.title,
+          isConnected: data.telegramChat.is_connected,
+          syncStatus: data.telegramChat.sync_status,
+          syncedAt: data.telegramChat.synced_at ? new Date(data.telegramChat.synced_at) : undefined,
         });
       } else {
         setTelegramChat(null);
       }
 
-      // 5. Fetch Memory Items
-      const { data: dbMemory } = await supabase.from('project_memory').select('*').eq('project_id', projectId);
-      if (dbMemory) {
-        setMemories(dbMemory.map((m: any) => ({
-          id: m.id,
-          category: m.category,
-          content: m.content,
-          tags: m.tags || [],
-          createdAt: new Date(m.created_at),
-        })));
-      }
+      // Update memories
+      setMemories(data.memories.map((m: any) => ({
+        id: m.id,
+        category: m.category,
+        content: m.content,
+        tags: m.tags || [],
+        createdAt: new Date(m.created_at),
+      })));
 
-      // 6. Fetch AI Observations (Inconsistencies)
-      const { data: dbObs } = await supabase.from('ai_observations').select('*').eq('project_id', projectId).eq('status', 'pending');
-      if (dbObs) {
-        setObservations(dbObs.map((o: any) => ({
-          id: o.id,
-          sourceType: o.source_type,
-          observation: o.observation,
-          type: o.type,
-          status: o.status,
-          confidenceScore: Number(o.confidence_score),
-        })));
-      }
+      // Update observations
+      setObservations(data.observations.map((o: any) => ({
+        id: o.id,
+        sourceType: o.source_type,
+        observation: o.observation,
+        type: o.type,
+        status: o.status,
+        confidenceScore: Number(o.confidence_score),
+      })));
 
-      // 7. Fetch Risks
-      const { data: dbRisks } = await supabase.from('risks').select('*').eq('project_id', projectId).eq('status', 'active');
-      if (dbRisks) {
-        setRisks(dbRisks.map((r: any) => ({
-          id: r.id,
-          description: r.description,
-          severity: r.severity,
-          status: r.status,
-          mitigationPlan: r.mitigation_plan,
-          detectedAt: new Date(r.detected_at),
-          confidenceScore: Number(r.confidence_score),
-        })));
-      }
+      // Update risks
+      setRisks(data.risks.map((r: any) => ({
+        id: r.id,
+        description: r.description,
+        severity: r.severity,
+        status: r.status,
+        mitigationPlan: r.mitigation_plan,
+        detectedAt: new Date(r.detected_at),
+        confidenceScore: Number(r.confidence_score),
+      })));
 
-      // 8. Fetch Decisions
-      const { data: dbDec } = await supabase.from('decisions').select('*').eq('project_id', projectId);
-      if (dbDec) {
-        setDecisions(dbDec.map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          context: d.context,
-          outcome: d.outcome,
-          deciders: d.deciders || [],
-          status: d.status,
-          date: new Date(d.date),
-        })));
-      }
+      // Update decisions
+      setDecisions(data.decisions.map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        context: d.context,
+        outcome: d.outcome,
+        deciders: d.deciders || [],
+        status: d.status,
+        date: new Date(d.date),
+      })));
 
-      // 9. Fetch Daily Report Summary
-      const { data: dbReport } = await supabase.from('daily_reports').select('*').eq('project_id', projectId).order('report_date', { ascending: false }).limit(1).maybeSingle();
-      if (dbReport) {
-        setDailyReportMarkdown(dbReport.summary);
+      // Update daily report summary
+      if (data.dailyReport) {
+        setDailyReportMarkdown(data.dailyReport.summary);
       } else {
         setDailyReportMarkdown('### DAILY EXECUTIVE SUMMARY\nNo report generated yet. Trigger diagnostic scan.');
       }
 
-      // 10. Fetch Activity Logs
-      const { data: dbActs } = await supabase.from('activity_log').select('*').eq('project_id', projectId).order('created_at', { ascending: false }).limit(50);
-      if (dbActs) {
-        setActivities(dbActs.map((a: any) => ({
-          id: a.id,
-          actionType: a.action_type,
-          description: a.description,
-          details: a.details,
-          createdAt: new Date(a.created_at),
-        })));
-      }
+      // Update activity logs
+      setActivities(data.activities.map((a: any) => ({
+        id: a.id,
+        actionType: a.action_type,
+        description: a.description,
+        details: a.details,
+        createdAt: new Date(a.created_at),
+      })));
+
     } catch (error) {
       console.error('Failed to load project database state:', error);
     }
