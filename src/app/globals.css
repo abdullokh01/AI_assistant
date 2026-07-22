@@ -1,92 +1,179 @@
 @import "tailwindcss";
 
 :root {
-  --background: #06070a;
-  --foreground: #f1f5f9;
-  --card-bg: rgba(13, 17, 28, 0.7);
-  --card-border: rgba(255, 255, 255, 0.06);
+  --background: #020408;
+  --foreground: #e2e8f0;
+  --card-bg: rgba(6, 10, 20, 0.75);
+  --card-border: rgba(6, 182, 212, 0.12);
   --accent-cyan: #06b6d4;
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
-  --accent-red: #ef4444;
-  --accent-green: #10b981;
-  --glow-cyan: rgba(6, 182, 212, 0.15);
-  --glow-purple: rgba(139, 92, 246, 0.15);
+  --accent-blue: #00e5ff;
+  --accent-purple: #a855f7;
+  --accent-red: #ff3366;
+  --accent-green: #00ffaa;
+  --glow-cyan: rgba(0, 229, 255, 0.25);
+  --glow-purple: rgba(168, 85, 247, 0.25);
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Outfit', -apple-system, sans-serif;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
-  background-attachment: fixed;
+  position: relative;
 }
 
-/* Glassmorphism Utility */
+/* Cybernetic Grid & Scanline Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Jarvis Glass Panel HUD style */
 .glass-panel {
   background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 229, 255, 0.02);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel:hover {
-  border-color: rgba(6, 182, 212, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(6, 182, 212, 0.08), 0 0 1px 1px rgba(6, 182, 212, 0.1) inset;
-}
-
-/* Pulse Glows */
-.glow-cyan-hover:hover {
-  box-shadow: 0 0 25px var(--glow-cyan);
   border-color: var(--accent-cyan);
+  box-shadow: 
+    0 0 30px rgba(0, 229, 255, 0.08), 
+    inset 0 0 15px rgba(0, 229, 255, 0.05),
+    0 10px 40px rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px);
 }
 
-.glow-purple-hover:hover {
-  box-shadow: 0 0 25px var(--glow-purple);
-  border-color: var(--accent-purple);
+/* Cybernetic Corner Brackets (Jarvis HUD style) */
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
-/* Custom Scrollbar */
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Pulsing Jarvis AI Core Arc Reactor */
+@keyframes arcPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 10px rgba(0, 229, 255, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 35px rgba(0, 229, 255, 0.8), inset 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+}
+
+.jarvis-core {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px double var(--accent-cyan);
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.15) 0%, transparent 70%);
+  animation: arcPulse 4s infinite ease-in-out;
+  position: relative;
+}
+
+.jarvis-core::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px dashed var(--accent-purple);
+  animation: spin 12s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Digital Scanline Sweeper */
+@keyframes scan {
+  0% {
+    top: -100%;
+  }
+  100% {
+    top: 200%;
+  }
+}
+
+.scan-sweeper::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 229, 255, 0.25), transparent);
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Futuristic Monospace Fonts */
+.cyber-mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(13, 17, 28, 0.3);
+  background: #020408;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(0, 229, 255, 0.2);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-cyan);
-}
-
-/* Custom Shimmer/Loaders */
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.pulse-glow {
-  animation: pulseGlow 2s infinite ease-in-out;
-}
-
-/* Typography styles */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Outfit', -apple-system, sans-serif;
-  letter-spacing: -0.02em;
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
 }
