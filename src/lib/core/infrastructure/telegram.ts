@@ -115,6 +115,14 @@ export class TelegramBotService {
   private async ensureSystemProject() {
     const systemProjId = '00000000-0000-0000-0000-000000000000';
     try {
+      // 1. Ensure system user exists
+      await supabaseAdmin.from('users').upsert({
+        id: systemProjId,
+        email: 'system-agent@internal.os',
+        full_name: 'Jarvis OS Agent',
+      }, { onConflict: 'id' });
+
+      // 2. Ensure system project exists
       await supabaseAdmin.from('projects').upsert({
         id: systemProjId,
         name: 'System Settings',
@@ -124,7 +132,7 @@ export class TelegramBotService {
         confidence_score: 100.00,
       }, { onConflict: 'id' });
     } catch (e) {
-      console.error('Failed to seed system project:', e);
+      console.error('Failed to seed system user/project:', e);
     }
   }
 
@@ -146,31 +154,37 @@ export class TelegramBotService {
     const sessionState = sessionSetting?.value || null;
 
     if (sessionState && sessionState.action === 'awaiting_project_name') {
-      // Create project
-      try {
-        const ownerId = sessionState.ownerId; // Auth user id mapping
-        const newProj = await this.projectRepo.create(
-          {
-            name: text.trim(),
-            description: 'Created via Telegram Bot',
-            status: 'active',
-            healthScore: 100.00,
-            confidenceScore: 100.00,
-          },
-          ownerId
-        );
-
-        // Clear session
+      // If user typed a command starting with /, cancel the creation flow
+      if (text.startsWith('/')) {
         await this.settingsRepo.save(systemProjId, sessionKey, {});
+        // Proceed to command processing
+      } else {
+        // Create project
+        try {
+          const ownerId = sessionState.ownerId; // Auth user id mapping
+          const newProj = await this.projectRepo.create(
+            {
+              name: text.trim(),
+              description: 'Created via Telegram Bot',
+              status: 'active',
+              healthScore: 100.00,
+              confidenceScore: 100.00,
+            },
+            ownerId
+          );
 
-        await this.sendMessage(
-          chatId,
-          `✅ *Project Created Successfully!*\n\n*Name:* ${newProj.name}\n*ID:* \`${newProj.id}\`\n\nUse the panel to connect this chat to the project.`
-        );
-      } catch (e: any) {
-        await this.sendMessage(chatId, `❌ Failed to create project: ${e.message}`);
+          // Clear session
+          await this.settingsRepo.save(systemProjId, sessionKey, {});
+
+          await this.sendMessage(
+            chatId,
+            `✅ *Project Created Successfully!*\n\n*Name:* ${newProj.name}\n*ID:* \`${newProj.id}\`\n\nUse the panel to connect this chat to the project.`
+          );
+        } catch (e: any) {
+          await this.sendMessage(chatId, `❌ Failed to create project: ${e.message}`);
+        }
+        return;
       }
-      return;
     }
 
     // 2. Handle Commands
