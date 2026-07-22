@@ -27,15 +27,11 @@ export default function Home() {
   const [lessonLoading, setLessonLoading] = useState<boolean>(false);
   const [pmLoading, setPmLoading] = useState<boolean>(false);
 
-  // Projects list (Mocks + Database loaded projects)
-  const [projectsList, setProjectsList] = useState<Array<{ id: string; name: string }>>([
-    { id: 'project-phoenix', name: '🔥 Project Phoenix (Core SaaS)' },
-    { id: 'saas-portal', name: '💻 SaaS Portal Integration' },
-    { id: 'mobile-app', name: '📱 iOS / Android Mobile Delivery' },
-  ]);
+  // Projects list (Mocks removed - loaded from Supabase)
+  const [projectsList, setProjectsList] = useState<Array<{ id: string; name: string }>>([]);
 
-  const [healthScore, setHealthScore] = useState<number>(85);
-  const [confidenceScore, setConfidenceScore] = useState<number>(94);
+  const [healthScore, setHealthScore] = useState<number>(100);
+  const [confidenceScore, setConfidenceScore] = useState<number>(100);
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [emails, setEmails] = useState<any[]>([]);
@@ -55,89 +51,28 @@ export default function Home() {
       try {
         const { data, error } = await supabase.from('projects').select('id, name');
         if (data && data.length > 0) {
-          // Merge database projects with mock projects
-          setProjectsList(prev => [
-            ...prev,
-            ...data.map((p: any) => ({ id: p.id, name: `📁 ${p.name}` }))
-          ]);
-          // Automatically select the first real project if available
+          setProjectsList(data.map((p: any) => ({ id: p.id, name: `📁 ${p.name}` })));
           setCurrentProjectId(data[0].id);
         }
       } catch (e) {
-        console.warn('Could not load projects from Supabase. Operating in offline mock mode.');
+        console.warn('Could not load projects from Supabase. Operating in offline mode.');
       }
     };
     fetchProjects();
   }, []);
 
-  // 2. Load Project Data (Supabase fetch with fallback to mocks)
+  // 2. Load Project Data (Supabase fetch only - no mock values)
   const loadProjectData = async (projectId: string) => {
     if (!isUUID(projectId)) {
-      // Seed MOCK data for offline demo
-      setTasks([
-        { id: 't-1', title: 'Setup database schema migrations', description: 'Configure Postgres tables, keys, and RLS', status: 'Done', source: 'trello', dueDate: new Date(Date.now() - 3600000 * 24), labels: ['Database', 'Backend'] },
-        { id: 't-2', title: 'Email IMAP classification worker', description: 'Connect to IMAP and run Claude prompt', status: 'In Progress', source: 'trello', dueDate: new Date(Date.now() + 3600000 * 48), labels: ['Backend', 'AI'] },
-        { id: 't-3', title: 'Telegram Bot Settings Menu Layout', description: 'Build inline keyboards settings', status: 'Todo', source: 'trello', dueDate: new Date(Date.now() + 3600000 * 72), labels: ['Telegram', 'Bot'] },
-        { id: 't-4', title: 'QA validation metrics', description: 'Run test cases for auth', status: 'QA', source: 'trello', labels: ['QA'] },
-      ]);
-
-      setEmails([
-        { id: 'e-1', subject: 'URGENT: Change in UI specification', fromName: 'Sarah Jenkins (Client)', fromEmail: 'client-director@company.com', body: 'Hi team, we decided to change the sidebar layout of the main dashboard. We need glassmorphism instead of solid blue. Can you implement this by Friday?', receivedAt: new Date(Date.now() - 3600000), classification: 'Client', responseDraft: 'Hi Sarah,\n\nI have logged this requirement change in the Project Memory. We are drafting the updated PRD specifications and moving the corresponding layout cards on the Trello board. We will verify compatibility by tomorrow morning.\n\nBest,\n[AI Project OS Bot]' },
-        { id: 'e-2', subject: 'Staging environment deployment', fromName: 'Lee (Backend Dev)', fromEmail: 'dev-lee@company.com', body: 'Hey, I have deployed the database schemas and migrations. Moving task card to Done.', receivedAt: new Date(Date.now() - 3600000 * 6), classification: 'Internal', responseDraft: 'Hi Lee,\n\nGreat work on the migrations. I am trigger syncing Trello. I will flag the chat to run audits.\n\nBest,\n[AI Project OS Bot]' },
-      ]);
-
-      setTelegramChat({
-        id: 'tg-1',
-        projectId,
-        chatId: -1001890234,
-        title: 'Phoenix Devs & Stakeholders',
-        isConnected: true,
-        syncStatus: 'idle',
-        syncedAt: new Date(),
-      });
-
-      setActivities([
-        { id: 'a-1', actionType: 'Telegram Message Tracked', description: '[Telegram] Lee (Dev): Finished the database schemas migrations! Ready to test.', details: { sender: 'Lee (Dev)', text: 'Finished the database schemas migrations! Ready to test.' }, createdAt: new Date(Date.now() - 3600000 * 2) },
-        { id: 'a-2', actionType: 'Trello Board Synchronized', description: 'Successfully synchronized 4 cards from Trello board (Phoenix Core)', details: { cardCount: 4 }, createdAt: new Date(Date.now() - 3600000 * 3) },
-        { id: 'a-3', actionType: 'AI Audit Completed', description: 'AI Audit completed. Health Score: 85%. Detected 1 Inconsistency.', details: { healthScore: 85 }, createdAt: new Date(Date.now() - 3600000 * 4) },
-      ]);
-
-      setMemories([
-        { id: 'm-1', category: 'Business Rules', content: 'No code deployments can happen on Fridays to prevent weekend downtime.', tags: ['Deployment', 'QA'], createdAt: new Date() },
-        { id: 'm-2', category: 'Client Preferences', content: 'Client prefers communications over email (IMAP) rather than Telegram for formal approvals.', tags: ['Communications'], createdAt: new Date() },
-        { id: 'm-3', category: 'Architecture', content: 'Use Supabase Postgres RLS policies for scoping user access to their corresponding projects.', tags: ['Database', 'Security'], createdAt: new Date() },
-      ]);
-
-      setObservations([
-        { id: 'o-1', sourceType: 'telegram', observation: 'Developer (Lee) stated "Finished the database schemas migrations" in Telegram, but the Trello card "Database migrations for Supabase" is still marked as "In Progress".', type: 'Inconsistency', status: 'pending', confidenceScore: 92.00 },
-      ]);
-
-      setRisks([
-        { id: 'r-1', description: 'Potential Scope Creep: Client requested design change to glassmorphism layout over email.', severity: 'medium', status: 'active', mitigationPlan: 'Draft change request spec in PM Assistant and ask for client authorization.', detectedAt: new Date(), confidenceScore: 85.00 },
-      ]);
-
-      setDecisions([
-        { id: 'd-1', title: 'Adopt Outfit Google Typography', context: 'Client requested cleaner layout font', outcome: 'Selected Outfit font to match premium aesthetics request', deciders: ['CEO', 'UX Lead'], status: 'agreed', date: new Date() },
-      ]);
-
-      setDailyReportMarkdown(`### DAILY EXECUTIVE SUMMARY
-The project **Project Phoenix** is currently operating at **85% Health** with **94% AI Confidence**. There is one pending channel inconsistency detected between Telegram and Trello.
-
-### COMPLETED TODAY
-- **Setup database schema migrations** (Source: Trello, Assignee: Lee)
-
-### IN PROGRESS & BLOCKED
-- [In Progress] **Email IMAP classification worker** (Due: Friday)
-- [QA Review] **QA validation metrics**
-
-### RECENT OBSERVATIONS & WARNINGS
-- 🚨 *Inconsistency*: Developer stated "Finished migrations" on Telegram but Trello still says "In Progress".
-- ⚠️ *Scope Creep Risk*: Client requested sidebar glassmorphism layout changes.
-
-### QUESTIONS FOR CEO
-1. Should we authorize a 1-day sprint extension to implement the client's glassmorphism UI changes?
-2. Approve the draft contract specification in the PM Workspace?
-`);
+      setTasks([]);
+      setEmails([]);
+      setTelegramChat(null);
+      setActivities([]);
+      setMemories([]);
+      setObservations([]);
+      setRisks([]);
+      setDecisions([]);
+      setDailyReportMarkdown('### SYSTEM DIAGNOSTIC STATUS\nNo active project database found. Create a project via Telegram Bot or Supabase Table Editor.');
       return;
     }
 
@@ -496,6 +431,37 @@ The project **Project Phoenix** is currently operating at **85% Health** with **
       {/* 1. OVERVIEW SCREEN */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Animated Hologram Core/Waveform Header */}
+          <div className="glass-panel p-4 flex flex-col md:flex-row items-center justify-between gap-4 border border-cyan-500/20 bg-[#060a14]/40">
+            <div>
+              <span className="text-[8px] font-black text-cyan-400 uppercase tracking-widest cyber-mono">
+                AI CORE // OSCILLOSCOPE FREQUENCY
+              </span>
+              <h3 className="text-sm font-extrabold text-white tracking-wide">
+                Active Telemetry & Real-Time Sync Streams
+              </h3>
+            </div>
+            
+            {/* Pulsing visual equalizer */}
+            <div className="flex items-center gap-1.5 h-10 px-6 bg-cyan-950/20 border border-cyan-500/20 rounded-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent animate-pulse"></div>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map((i) => (
+                <span 
+                  key={i} 
+                  className="w-[2px] bg-cyan-400 rounded-full animate-bounce"
+                  style={{
+                    height: `${(Math.sin(i * 0.5) * 12) + 20}px`,
+                    animationDelay: `${i * 0.05}s`,
+                    animationDuration: `${0.4 + (i % 4) * 0.15}s`
+                  }}
+                ></span>
+              ))}
+              <span className="text-[8px] font-mono text-cyan-350 uppercase tracking-widest ml-3 cyber-mono animate-pulse">
+                JARVIS_CORE_V3.5_UP
+              </span>
+            </div>
+          </div>
+
           {/* Health Gauge Widget */}
           <HealthIndicator
             healthScore={healthScore}
