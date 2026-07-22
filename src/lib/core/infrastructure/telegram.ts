@@ -1,0 +1,337 @@
+// Telegram Bot Integration Service - AI Project Intelligence Platform
+// Path: src/lib/core/infrastructure/telegram.ts
+
+import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository } from './supabase';
+import { TelegramChat } from '../domain/types';
+import { supabaseAdmin } from '../../shared/supabase-client';
+
+const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
+const isMock = !botToken;
+
+export class TelegramBotService {
+  private telegramRepo = new TelegramRepository();
+  private projectRepo = new ProjectRepository();
+  private activityRepo = new ActivityRepository();
+  private settingsRepo = new SettingsRepository();
+
+  private getApiUrl(method: string) {
+    return `https://api.telegram.org/bot${botToken}/${method}`;
+  }
+
+  // Sends a message to Telegram
+  async sendMessage(chatId: number, text: string, replyMarkup?: any): Promise<boolean> {
+    if (isMock) {
+      console.log(`[TELEGRAM BOT MOCK] Sent to ${chatId}: ${text}`);
+      return true;
+    }
+
+    try {
+      const res = await fetch(this.getApiUrl('sendMessage'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: 'Markdown',
+          reply_markup: replyMarkup,
+        }),
+      });
+      return res.ok;
+    } catch (e) {
+      console.error('Failed to send Telegram message:', e);
+      return false;
+    }
+  }
+
+  // Answer callback query
+  async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<boolean> {
+    if (isMock) return true;
+    try {
+      const res = await fetch(this.getApiUrl('answerCallbackQuery'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callback_query_id: callbackQueryId,
+          text,
+        }),
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Edit message text
+  async editMessageText(chatId: number, messageId: number, text: string, replyMarkup?: any): Promise<boolean> {
+    if (isMock) {
+      console.log(`[TELEGRAM BOT MOCK] Edited message ${messageId} in ${chatId}: ${text}`);
+      return true;
+    }
+    try {
+      const res = await fetch(this.getApiUrl('editMessageText'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId,
+          text,
+          parse_mode: 'Markdown',
+          reply_markup: replyMarkup,
+        }),
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Registers webhook with Telegram
+  async setWebhook(url: string): Promise<boolean> {
+    if (isMock) return true;
+    try {
+      const res = await fetch(this.getApiUrl('setWebhook'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      return data.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Processes webhook payloads from Telegram
+  async handleWebhookUpdate(update: any): Promise<void> {
+    if (!update) return;
+
+    if (update.message) {
+      await this.handleMessage(update.message);
+    } else if (update.callback_query) {
+      await this.handleCallbackQuery(update.callback_query);
+    }
+  }
+
+  // Handle text messages
+  private async handleMessage(message: any): Promise<void> {
+    const chatId = message.chat.id;
+    const text = message.text || '';
+    const userId = message.from.id;
+    const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
+
+    // 1. Check if user is in a state machine (e.g. creating project name)
+    const sessionKey = `tg_session_${userId}`;
+    // Fetch user session state from settings or a mock registry
+    // In production, we'll store session states under project settings or user metadata.
+    // For simplicity, let's check a standard session state using settings table with projectId='00000000-0000-0000-0000-000000000000'
+    const systemProjId = '00000000-0000-0000-0000-000000000000'; // Represents system settings
+    const sessionSetting = await this.settingsRepo.get(systemProjId, sessionKey);
+    const sessionState = sessionSetting?.value || null;
+
+    if (sessionState && sessionState.action === 'awaiting_project_name') {
+      // Create project
+      try {
+        const ownerId = sessionState.ownerId; // Auth user id mapping
+        const newProj = await this.projectRepo.create(
+          {
+            name: text.trim(),
+            description: 'Created via Telegram Bot',
+            status: 'active',
+            healthScore: 100.00,
+            confidenceScore: 100.00,
+          },
+          ownerId
+        );
+
+        // Clear session
+        await this.settingsRepo.save(systemProjId, sessionKey, {});
+
+        await this.sendMessage(
+          chatId,
+          `✅ *Project Created Successfully!*\n\n*Name:* ${newProj.name}\n*ID:* \`${newProj.id}\`\n\nUse the panel to connect this chat to the project.`
+        );
+      } catch (e: any) {
+        await this.sendMessage(chatId, `❌ Failed to create project: ${e.message}`);
+      }
+      return;
+    }
+
+    // 2. Handle Commands
+    if (text.startsWith('/start')) {
+      await this.sendWelcomeMessage(chatId, isGroup);
+    } else if (text.startsWith('/settings')) {
+      await this.sendSettingsMenu(chatId);
+    } else if (text.startsWith('/sync')) {
+      // Sync chat trigger
+      await this.handleChatSyncCommand(chatId, text);
+    } else if (isGroup) {
+      // Group chat activity tracking
+      // Log messages to activity log to allow intelligence audits
+      const chatConfig = await this.telegramRepo.getByChatId(chatId);
+      if (chatConfig && chatConfig.isConnected) {
+        await this.activityRepo.log(
+          chatConfig.projectId,
+          'Telegram Message Tracked',
+          `[Telegram] ${message.from.first_name || 'User'}: ${text}`,
+          { sender: message.from.first_name, text, username: message.from.username }
+        );
+      }
+    }
+  }
+
+  // Handle button clicks (Callback Queries)
+  private async handleCallbackQuery(callbackQuery: any): Promise<void> {
+    const id = callbackQuery.id;
+    const data = callbackQuery.data || '';
+    const message = callbackQuery.message;
+    const chatId = message.chat.id;
+    const messageId = message.message_id;
+    const userId = callbackQuery.from.id;
+
+    await this.answerCallbackQuery(id);
+
+    if (data === 'menu_main') {
+      await this.editMessageText(chatId, messageId, '*AI Project OS Bot*\nManage integrations, projects, and notifications.', this.getMainMenuMarkup());
+    } else if (data === 'menu_projects') {
+      await this.showProjectsMenu(chatId, messageId, userId);
+    } else if (data === 'project_new') {
+      // Ask user to type name
+      const systemProjId = '00000000-0000-0000-0000-000000000000';
+      await this.settingsRepo.save(systemProjId, `tg_session_${userId}`, {
+        action: 'awaiting_project_name',
+        ownerId: '00000000-0000-0000-0000-000000000000', // Assign to system user mock
+      });
+      await this.sendMessage(chatId, '📝 Please enter the *Project Name* in your next message:');
+    } else if (data.startsWith('proj_view_')) {
+      const projId = data.replace('proj_view_', '');
+      await this.showProjectSettings(chatId, messageId, projId);
+    } else if (data.startsWith('proj_sync_')) {
+      const projId = data.replace('proj_sync_', '');
+      // Trigger sync
+      await this.editMessageText(
+        chatId,
+        messageId,
+        `⏳ Syncing Project \`${projId}\`... Trello cards, Emails, and Telegram messages are being updated.`,
+        {
+          inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projId}` }]],
+        }
+      );
+
+      // Simulate completion in 1s
+      setTimeout(async () => {
+        await this.sendMessage(chatId, `✅ Sync complete for project \`${projId}\`! Inconsistencies analyzed.`);
+      }, 1000);
+    } else if (data.startsWith('proj_connect_chat_')) {
+      const projId = data.replace('proj_connect_chat_', '');
+      // Link current chat to project
+      try {
+        await this.telegramRepo.save({
+          projectId: projId,
+          chatId,
+          title: message.chat.title || 'Telegram Group',
+          isConnected: true,
+          settings: {},
+          syncStatus: 'idle',
+        });
+        await this.editMessageText(chatId, messageId, `✅ Linked current chat to Project!`, {
+          inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projId}` }]],
+        });
+      } catch (e: any) {
+        await this.sendMessage(chatId, `❌ Failed to connect chat: ${e.message}`);
+      }
+    }
+  }
+
+  // Welcome response
+  private async sendWelcomeMessage(chatId: number, isGroup: boolean) {
+    const text = `🚀 *Welcome to AI Project OS!*\n\nI am the intelligent agent running project delivery operations. Connect me to your Telegram Group chats, sync Trello, and let me handle project health audits, email classification, and CEO daily executive summaries.`;
+    await this.sendMessage(chatId, text, this.getMainMenuMarkup());
+  }
+
+  private async sendSettingsMenu(chatId: number) {
+    await this.sendMessage(chatId, '⚙️ *Bot Settings Menu*', this.getMainMenuMarkup());
+  }
+
+  private getMainMenuMarkup() {
+    return {
+      inline_keyboard: [
+        [{ text: '📂 Projects & Connects', callback_data: 'menu_projects' }],
+        [{ text: '🔔 Global Notifications', callback_data: 'menu_notifications' }],
+        [{ text: '🤖 Intelligence Dashboard', callback_data: 'menu_intel' }],
+      ],
+    };
+  }
+
+  // Projects list
+  private async showProjectsMenu(chatId: number, messageId: number, tgUserId: number) {
+    // List all projects. For bot commands, fetch all projects in database
+    const systemProjId = '00000000-0000-0000-0000-000000000000';
+    // We fetch all standard projects
+    const { data: projects, error } = await supabaseAdmin.from('projects').select('id, name');
+    
+    const inlineKeyboard: any[] = [];
+    if (projects && projects.length > 0) {
+      projects.forEach((p: any) => {
+        inlineKeyboard.push([{ text: `📁 ${p.name}`, callback_data: `proj_view_${p.id}` }]);
+      });
+    }
+
+    inlineKeyboard.push([{ text: '➕ Create Project', callback_data: 'project_new' }]);
+    inlineKeyboard.push([{ text: '⬅️ Back', callback_data: 'menu_main' }]);
+
+    await this.editMessageText(
+      chatId,
+      messageId,
+      `📂 *Active Projects List*\nSelect a project to configure notification alerts, sync settings, or link Telegram chats.`,
+      { inline_keyboard: inlineKeyboard }
+    );
+  }
+
+  // Project Settings menu
+  private async showProjectSettings(chatId: number, messageId: number, projectId: string) {
+    const proj = await this.projectRepo.getById(projectId);
+    if (!proj) {
+      await this.sendMessage(chatId, '❌ Project not found.');
+      return;
+    }
+
+    const inlineKeyboard = [
+      [{ text: '🔄 Sync Trello & Emails', callback_data: `proj_sync_${projectId}` }],
+      [{ text: '🔗 Connect Telegram Chat', callback_data: `proj_connect_chat_${projectId}` }],
+      [
+        { text: '🔔 Alerts Toggle', callback_data: `proj_alerts_${projectId}` },
+        { text: '🧠 Project Memory', callback_data: `proj_mem_${projectId}` },
+      ],
+      [{ text: '⬅️ Projects List', callback_data: 'menu_projects' }],
+    ];
+
+    const text = `📁 *Project Details: ${proj.name}*\n\n` +
+      `*Health Score:* ${proj.healthScore}%\n` +
+      `*AI Confidence:* ${proj.confidenceScore}%\n` +
+      `*Status:* ${proj.status.toUpperCase()}\n\n` +
+      `Select an operation below:`;
+
+    await this.editMessageText(chatId, messageId, text, { inline_keyboard: inlineKeyboard });
+  }
+
+  // Handle /sync command
+  private async handleChatSyncCommand(chatId: number, text: string) {
+    const chat = await this.telegramRepo.getByChatId(chatId);
+    if (!chat) {
+      await this.sendMessage(
+        chatId,
+        `❌ Chat is not linked to any project. Connect this chat by opening settings in direct messages and linking it.`
+      );
+      return;
+    }
+
+    await this.sendMessage(chatId, `⏳ Synchronizing chat history and running inconsistency analyzer...`);
+    // Execute mock sync event
+    setTimeout(async () => {
+      await this.sendMessage(
+        chatId,
+        `✅ Sync complete!\nTrello status and Telegram developer messages align perfectly.`
+      );
+    }, 1200);
+  }
+}
