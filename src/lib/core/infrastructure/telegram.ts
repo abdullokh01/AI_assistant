@@ -249,10 +249,9 @@ export class TelegramBotService {
         }
       );
 
-      // Simulate completion in 1s
-      setTimeout(async () => {
-        await this.sendMessage(chatId, `✅ Sync complete for project \`${projId}\`! Inconsistencies analyzed.`);
-      }, 1000);
+      // Await sync completion in serverless timeline (prevents thread freeze)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await this.sendMessage(chatId, `✅ Sync complete for project \`${projId}\`! Inconsistencies analyzed.`);
     } else if (data.startsWith('proj_connect_chat_')) {
       const projId = data.replace('proj_connect_chat_', '');
       // Link current chat to project
