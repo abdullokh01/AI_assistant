@@ -111,31 +111,46 @@ export class TrelloService {
       const boardConfig = await this.trelloRepo.getByProject(projectId);
       const listMappings = boardConfig?.listMappings || {};
 
-      // Map lists
-      const mappedCards = cards.map((card: any) => {
-        // Find mapped status from list mappings or use default
-        let status: TaskStatus = 'Todo';
-        const mappedStatus = listMappings[card.idList];
-        if (mappedStatus) {
-          status = mappedStatus;
-        } else {
-          // Standard heuristic if mappings not defined
-          const listName = lists.find((l: any) => l.id === card.idList)?.name.toLowerCase() || '';
-          if (listName.includes('done') || listName.includes('finished')) status = 'Done';
-          else if (listName.includes('qa') || listName.includes('review') || listName.includes('testing')) status = 'QA';
-          else if (listName.includes('progress') || listName.includes('doing')) status = 'In Progress';
-          else if (listName.includes('block') || listName.includes('hold')) status = 'Blocked';
-        }
+      // Identify archive / historical lists that should NOT flood the active board.
+      // These are monthly "Done (January/February/...)" buckets and explicit archives.
+      const monthPattern = /(january|february|march|april|may|june|july|august|september|october|november|december)/i;
+      const isArchiveList = (name: string) => {
+        const n = (name || '').toLowerCase();
+        if (n.includes('archive')) return true;
+        // "Done (May)", "Done(February) - done, published", etc.
+        if (n.includes('done') && (monthPattern.test(n) || n.includes('(archive)'))) return true;
+        return false;
+      };
+      const listNameById = (id: string) =>
+        lists.find((l: any) => l.id === id)?.name || '';
 
-        return {
-          id: card.id,
-          name: card.name,
-          desc: card.desc,
-          status,
-          due: card.due,
-          labels: card.labels || [],
-        };
-      });
+      // Map lists (skip archived/historical lists so the Kanban shows current work only)
+      const mappedCards = cards
+        .filter((card: any) => !isArchiveList(listNameById(card.idList)))
+        .map((card: any) => {
+          // Find mapped status from list mappings or use default
+          let status: TaskStatus = 'Todo';
+          const mappedStatus = listMappings[card.idList];
+          if (mappedStatus) {
+            status = mappedStatus;
+          } else {
+            // Standard heuristic if mappings not defined
+            const listName = listNameById(card.idList).toLowerCase();
+            if (listName.includes('done') || listName.includes('finished') || listName.includes('prod')) status = 'Done';
+            else if (listName.includes('qa') || listName.includes('review') || listName.includes('testing')) status = 'QA';
+            else if (listName.includes('progress') || listName.includes('doing')) status = 'In Progress';
+            else if (listName.includes('block') || listName.includes('hold') || listName.includes('pause')) status = 'Blocked';
+          }
+
+          return {
+            id: card.id,
+            name: card.name,
+            desc: card.desc,
+            status,
+            due: card.due,
+            labels: card.labels || [],
+          };
+        });
 
       // Write to DB
       await this.taskRepo.syncTrelloTasks(projectId, mappedCards);
