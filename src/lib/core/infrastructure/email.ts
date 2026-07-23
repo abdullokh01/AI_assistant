@@ -3,6 +3,7 @@
 
 import nodemailer from 'nodemailer';
 import { simpleParser } from 'mailparser';
+import { ImapFlow } from 'imapflow';
 import { EmailRepository } from './supabase';
 import { ClaudeService } from './claude';
 import { Email } from '../domain/types';
@@ -72,12 +73,87 @@ export class EmailService {
       return existing;
     }
 
-    // REAL IMAP SYNC IMPLEMENTATION (Simplified Node standard connection)
-    // In production, you would use node-imap / imap-simple. Since imap package is heavy and can block,
-    // we use a clean fetch-based simulator OR simple imap client implementation.
-    // For safety in edge runtimes, we log and return current emails.
+    // REAL IMAP SYNC IMPLEMENTATION using ImapFlow
     console.log(`Connecting to IMAP host: ${imapConfig.host}:${imapConfig.port}`);
-    // Real implementation would connect, fetch UNSEEN, parse with simpleParser, and save.
+
+    const client = new ImapFlow({
+      host: imapConfig.host!,
+      port: imapConfig.port || 993,
+      secure: (imapConfig.port || 993) === 993,
+      auth: {
+        user: imapConfig.user!,
+        pass: imapConfig.password!,
+      },
+      logger: false,
+    });
+
+    const syncedEmails: Email[] = [];
+
+    try {
+      await client.connect();
+      const lock = await client.getMailboxLock('INBOX');
+
+      try {
+        // Build a set of already-stored message ids to avoid duplicates
+        const existing = await this.emailRepo.listByProject(projectId);
+        const knownIds = new Set(existing.map((e) => e.messageId));
+
+        // Fetch the most recent messages (cap to last 20 to stay within limits)
+        const mailbox: any = client.mailbox;
+        const total = mailbox && mailbox.exists ? mailbox.exists : 0;
+        if (total === 0) {
+          return existing;
+        }
+        const start = Math.max(1, total - 19);
+        const range = `${start}:*`;
+
+        for await (const msg of client.fetch(range, { source: true })) {
+          const parsed = await simpleParser(msg.source as Buffer);
+
+          const messageId = parsed.messageId || `<imap-${projectId}-${msg.uid}>`;
+          if (knownIds.has(messageId)) continue;
+
+          const subject = parsed.subject || '(no subject)';
+          const body = parsed.text || parsed.html || '';
+          const fromEmail = parsed.from?.value?.[0]?.address || 'unknown@unknown.com';
+          const fromName = parsed.from?.value?.[0]?.name || fromEmail;
+          const toEmail = (parsed.to && 'value' in parsed.to)
+            ? parsed.to.value.map((a) => a.address || '').filter(Boolean)
+            : [];
+          const receivedAt = parsed.date || new Date();
+
+          // Classify and draft a reply with Claude
+          const { classification, draftReply } = await this.claudeService.classifyAndDraftEmail(
+            subject,
+            body,
+            fromEmail,
+            `Project ID: ${projectId}. A software development project.`
+          );
+
+          const saved = await this.emailRepo.save({
+            projectId,
+            messageId,
+            threadId: parsed.inReplyTo || undefined,
+            fromEmail,
+            fromName,
+            toEmail,
+            subject,
+            body,
+            receivedAt,
+            classification,
+            responseDraft: draftReply,
+          });
+          syncedEmails.push(saved);
+          knownIds.add(messageId);
+        }
+      } finally {
+        lock.release();
+      }
+    } finally {
+      await client.logout().catch(() => {});
+    }
+
+    // Return the full up-to-date list for the project
     return await this.emailRepo.listByProject(projectId);
   }
 

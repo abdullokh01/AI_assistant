@@ -16,7 +16,7 @@ export class TrelloService {
     token: string,
     boardId: string
   ): Promise<Task[]> {
-    const isMock = !apiKey || !boardId;
+    const isMock = !apiKey || !boardId || !token || token === 'mock-token';
 
     if (isMock) {
       console.log(`Syncing Trello board in MOCK mode for project: ${projectId}`);

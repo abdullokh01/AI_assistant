@@ -20,21 +20,22 @@ export async function POST(request: Request) {
     const results: any[] = [];
 
     const apiKey = process.env.TRELLO_API_KEY || '';
+    const token = process.env.TRELLO_TOKEN || '';
     // Service tokens or board IDs could be stored per-project in the integrations/settings table
     const boardId = process.env.TRELLO_BOARD_ID || 'mock-board-id';
 
     if (projectId) {
-      const tasks = await trelloService.syncBoard(projectId, apiKey, 'mock-token', boardId);
+      const tasks = await trelloService.syncBoard(projectId, apiKey, token, boardId);
       results.push({ projectId, cardCount: tasks.length });
     } else {
       const { data: projects } = await supabaseAdmin
         .from('projects')
         .select('id, name')
         .eq('status', 'active');
-      
+
       if (projects) {
         for (const p of projects) {
-          const tasks = await trelloService.syncBoard(p.id, apiKey, 'mock-token', boardId);
+          const tasks = await trelloService.syncBoard(p.id, apiKey, token, boardId);
           results.push({ projectId: p.id, name: p.name, cardCount: tasks.length });
         }
       }
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
   const tasks = await trelloService.syncBoard(
     projectId || 'demo-project-id',
     process.env.TRELLO_API_KEY || '',
-    'mock-token',
+    process.env.TRELLO_TOKEN || '',
     process.env.TRELLO_BOARD_ID || 'mock-board-id'
   );
 

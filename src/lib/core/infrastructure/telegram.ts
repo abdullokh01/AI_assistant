@@ -4,6 +4,8 @@
 import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository } from './supabase';
 import { TelegramChat } from '../domain/types';
 import { supabaseAdmin } from '../../shared/supabase-client';
+import { TrelloService } from './trello';
+import { EmailService } from './email';
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const isMock = !botToken;
@@ -243,15 +245,15 @@ export class TelegramBotService {
       await this.editMessageText(
         chatId,
         messageId,
-        `⏳ Syncing Project \`${projId}\`... Trello cards, Emails, and Telegram messages are being updated.`,
+        `⏳ Syncing Project \`${projId}\`... Trello cards and Emails are being updated.`,
         {
           inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projId}` }]],
         }
       );
 
-      // Await sync completion in serverless timeline (prevents thread freeze)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      await this.sendMessage(chatId, `✅ Sync complete for project \`${projId}\`! Inconsistencies analyzed.`);
+      // Run the real sync against Trello + Email integrations
+      const summary = await this.runProjectSync(projId);
+      await this.sendMessage(chatId, summary);
     } else if (data.startsWith('proj_connect_chat_')) {
       const projId = data.replace('proj_connect_chat_', '');
       // Link current chat to project
@@ -356,13 +358,44 @@ export class TelegramBotService {
       return;
     }
 
-    await this.sendMessage(chatId, `⏳ Synchronizing chat history and running inconsistency analyzer...`);
-    // Execute mock sync event
-    setTimeout(async () => {
-      await this.sendMessage(
-        chatId,
-        `✅ Sync complete!\nTrello status and Telegram developer messages align perfectly.`
+    await this.sendMessage(chatId, `⏳ Synchronizing Trello cards and emails...`);
+    const summary = await this.runProjectSync(chat.projectId);
+    await this.sendMessage(chatId, summary);
+  }
+
+  // Runs a real sync of Trello + Email integrations for a project and
+  // returns a human-readable Telegram summary message.
+  private async runProjectSync(projectId: string): Promise<string> {
+    const lines: string[] = [`✅ *Sync complete for project* \`${projectId}\``, ''];
+
+    // 1. Trello
+    try {
+      const trelloService = new TrelloService();
+      const tasks = await trelloService.syncBoard(
+        projectId,
+        process.env.TRELLO_API_KEY || '',
+        process.env.TRELLO_TOKEN || '',
+        process.env.TRELLO_BOARD_ID || ''
       );
-    }, 1200);
+      lines.push(`📋 Trello: ${tasks.length} cards synced`);
+    } catch (e: any) {
+      lines.push(`📋 Trello: ❌ ${e.message}`);
+    }
+
+    // 2. Email
+    try {
+      const emailService = new EmailService();
+      const emails = await emailService.syncEmails(projectId, {
+        host: process.env.IMAP_HOST,
+        port: process.env.IMAP_PORT ? Number(process.env.IMAP_PORT) : undefined,
+        user: process.env.EMAIL_USERNAME,
+        password: process.env.EMAIL_PASSWORD,
+      });
+      lines.push(`📧 Email: ${emails.length} messages synced`);
+    } catch (e: any) {
+      lines.push(`📧 Email: ❌ ${e.message}`);
+    }
+
+    return lines.join('\n');
   }
 }
