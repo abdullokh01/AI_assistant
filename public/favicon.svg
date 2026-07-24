@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#aef6ff"/>
+      <stop offset="45%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#0699b8"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- dark chamfered panel -->
+  <path d="M6 2 H48 L62 16 V58 A4 4 0 0 1 58 62 H16 L2 48 V6 A4 4 0 0 1 6 2 Z"
+        fill="#05080f" stroke="#0e2230" stroke-width="1.5"/>
+
+  <!-- corner brackets -->
+  <path d="M10 6 H18 M10 6 V14" stroke="#00e5ff" stroke-width="1.6" fill="none" opacity="0.75"/>
+  <path d="M54 58 H46 M54 58 V50" stroke="#a855f7" stroke-width="1.6" fill="none" opacity="0.75"/>
+
+  <g filter="url(#glow)">
+    <!-- outer gradient ring -->
+    <circle cx="32" cy="32" r="18" fill="none" stroke="url(#ring)" stroke-width="3"/>
+    <!-- dashed inner ring -->
+    <circle cx="32" cy="32" r="12" fill="none" stroke="#a855f7" stroke-width="1.4"
+            stroke-dasharray="3 3" opacity="0.85"/>
+    <!-- reactor core -->
+    <circle cx="32" cy="32" r="6.5" fill="url(#core)"/>
+    <!-- energy ticks -->
+    <path d="M32 8 V15 M32 49 V56 M8 32 H15 M49 32 H56"
+          stroke="#00e5ff" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+  </g>
+</svg>

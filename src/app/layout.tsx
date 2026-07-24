@@ -5,10 +5,13 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AI Project OS | Project Intelligence Platform',
+  title: 'JARVIS // OS | Project Intelligence Platform',
   description: 'Production-ready AI Operating System for managing software development projects, emails, Trello cards, and Telegram group chats.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico' },
+    ],
   },
 };
 
