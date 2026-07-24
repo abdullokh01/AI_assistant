@@ -92,6 +92,8 @@ export interface Task {
   assigneeId?: string;
   dueDate?: Date;
   labels: string[];
+  /** When the source system (e.g. Trello) last changed this task. */
+  sourceUpdatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

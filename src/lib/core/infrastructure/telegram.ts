@@ -1,7 +1,7 @@
 // Telegram Bot Integration Service - AI Project Intelligence Platform
 // Path: src/lib/core/infrastructure/telegram.ts
 
-import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository } from './supabase';
+import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository, MemoryRepository } from './supabase';
 import { TelegramChat } from '../domain/types';
 import { supabaseAdmin } from '../../shared/supabase-client';
 import { TrelloService } from './trello';
@@ -10,11 +10,15 @@ import { EmailService } from './email';
 const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const isMock = !botToken;
 
+// Placeholder project that owns global settings and per-user bot sessions.
+const SYSTEM_PROJECT_ID = '00000000-0000-0000-0000-000000000000';
+
 export class TelegramBotService {
   private telegramRepo = new TelegramRepository();
   private projectRepo = new ProjectRepository();
   private activityRepo = new ActivityRepository();
   private settingsRepo = new SettingsRepository();
+  private memoryRepo = new MemoryRepository();
 
   private getApiUrl(method: string) {
     return `https://api.telegram.org/bot${botToken}/${method}`;
@@ -115,7 +119,7 @@ export class TelegramBotService {
   }
 
   private async ensureSystemProject() {
-    const systemProjId = '00000000-0000-0000-0000-000000000000';
+    const systemProjId = SYSTEM_PROJECT_ID;
     try {
       // 1. Ensure system user exists
       await supabaseAdmin.from('users').upsert({
@@ -150,7 +154,7 @@ export class TelegramBotService {
     // Fetch user session state from settings or a mock registry
     // In production, we'll store session states under project settings or user metadata.
     // For simplicity, let's check a standard session state using settings table with projectId='00000000-0000-0000-0000-000000000000'
-    const systemProjId = '00000000-0000-0000-0000-000000000000'; // Represents system settings
+    const systemProjId = SYSTEM_PROJECT_ID; // Represents system settings
     await this.ensureSystemProject();
     const sessionSetting = await this.settingsRepo.get(systemProjId, sessionKey);
     const sessionState = sessionSetting?.value || null;
@@ -229,7 +233,7 @@ export class TelegramBotService {
       await this.showProjectsMenu(chatId, messageId, userId);
     } else if (data === 'project_new') {
       // Ask user to type name
-      const systemProjId = '00000000-0000-0000-0000-000000000000';
+      const systemProjId = SYSTEM_PROJECT_ID;
       await this.ensureSystemProject();
       await this.settingsRepo.save(systemProjId, `tg_session_${userId}`, {
         action: 'awaiting_project_name',
@@ -254,6 +258,16 @@ export class TelegramBotService {
       // Run the real sync against Trello + Email integrations
       const summary = await this.runProjectSync(projId);
       await this.sendMessage(chatId, summary);
+    } else if (data === 'menu_intel') {
+      await this.showIntelligence(chatId, messageId);
+    } else if (data === 'menu_notifications') {
+      await this.showNotificationSettings(chatId, messageId);
+    } else if (data === 'notif_toggle') {
+      await this.toggleGlobalNotifications(chatId, messageId);
+    } else if (data.startsWith('proj_alerts_')) {
+      await this.toggleProjectAlerts(chatId, messageId, data.replace('proj_alerts_', ''));
+    } else if (data.startsWith('proj_mem_')) {
+      await this.showProjectMemory(chatId, messageId, data.replace('proj_mem_', ''));
     } else if (data.startsWith('proj_connect_chat_')) {
       const projId = data.replace('proj_connect_chat_', '');
       // Link current chat to project
@@ -298,7 +312,7 @@ export class TelegramBotService {
   // Projects list
   private async showProjectsMenu(chatId: number, messageId: number, tgUserId: number) {
     // List all projects. For bot commands, fetch all projects in database
-    const systemProjId = '00000000-0000-0000-0000-000000000000';
+    const systemProjId = SYSTEM_PROJECT_ID;
     // We fetch all standard projects
     const { data: projects, error } = await supabaseAdmin.from('projects').select('id, name');
     
@@ -361,6 +375,102 @@ export class TelegramBotService {
     await this.sendMessage(chatId, `⏳ Synchronizing Trello cards and emails...`);
     const summary = await this.runProjectSync(chat.projectId);
     await this.sendMessage(chatId, summary);
+  }
+
+  // Cross-project snapshot: task split, waiting emails, open risks.
+  private async showIntelligence(chatId: number, messageId: number) {
+    const { data: projects } = await supabaseAdmin
+      .from('projects')
+      .select('id, name')
+      .eq('status', 'active')
+      .neq('id', SYSTEM_PROJECT_ID);
+
+    const lines: string[] = ['🤖 *Intelligence Dashboard*', ''];
+
+    for (const p of projects || []) {
+      const [{ data: tasks }, { data: emails }, { data: risks }] = await Promise.all([
+        supabaseAdmin.from('tasks').select('status').eq('project_id', p.id),
+        supabaseAdmin.from('emails').select('id').eq('project_id', p.id).is('sent_at', null),
+        supabaseAdmin.from('risks').select('id').eq('project_id', p.id).eq('status', 'active'),
+      ]);
+
+      const count = (s: string) => (tasks || []).filter((t: any) => t.status === s).length;
+      lines.push(
+        `📁 *${p.name}*`,
+        `   Todo ${count('Todo')} · Doing ${count('In Progress')} · Done ${count('Done')} · Blocked ${count('Blocked')}`,
+        `   📧 ${(emails || []).length} awaiting reply · ⚠️ ${(risks || []).length} open risks`,
+        ''
+      );
+    }
+
+    if (!projects || projects.length === 0) {
+      lines.push('_No active projects yet._');
+    }
+
+    await this.editMessageText(chatId, messageId, lines.join('\n'), {
+      inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu_main' }]],
+    });
+  }
+
+  private async notificationsEnabled(): Promise<boolean> {
+    await this.ensureSystemProject();
+    const setting = await this.settingsRepo.get(SYSTEM_PROJECT_ID, 'global_notifications');
+    // Default to on so a fresh install still alerts.
+    return setting?.value?.enabled !== false;
+  }
+
+  private async showNotificationSettings(chatId: number, messageId: number) {
+    const enabled = await this.notificationsEnabled();
+    await this.editMessageText(
+      chatId,
+      messageId,
+      `🔔 *Global Notifications*\n\nStatus: *${enabled ? 'ON' : 'OFF'}*\n\nControls whether the bot pushes daily reports and inconsistency alerts.`,
+      {
+        inline_keyboard: [
+          [{ text: enabled ? '🔕 Turn OFF' : '🔔 Turn ON', callback_data: 'notif_toggle' }],
+          [{ text: '⬅️ Back', callback_data: 'menu_main' }],
+        ],
+      }
+    );
+  }
+
+  private async toggleGlobalNotifications(chatId: number, messageId: number) {
+    const enabled = await this.notificationsEnabled();
+    await this.settingsRepo.save(SYSTEM_PROJECT_ID, 'global_notifications', { enabled: !enabled });
+    await this.showNotificationSettings(chatId, messageId);
+  }
+
+  private async toggleProjectAlerts(chatId: number, messageId: number, projectId: string) {
+    const key = 'alerts_enabled';
+    const current = await this.settingsRepo.get(projectId, key);
+    const enabled = current?.value?.enabled !== false;
+    await this.settingsRepo.save(projectId, key, { enabled: !enabled });
+
+    await this.editMessageText(
+      chatId,
+      messageId,
+      `🔔 Alerts for this project are now *${!enabled ? 'ON' : 'OFF'}*.`,
+      { inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projectId}` }]] }
+    );
+  }
+
+  private async showProjectMemory(chatId: number, messageId: number, projectId: string) {
+    const memories = await this.memoryRepo.listByProject(projectId);
+
+    const lines: string[] = ['🧠 *Project Memory*', ''];
+    if (memories.length === 0) {
+      lines.push('_Nothing recorded yet._', '', 'Memory fills up as the AI audits emails, Trello and chat.');
+    } else {
+      for (const m of memories.slice(0, 10)) {
+        const text = m.content.length > 140 ? `${m.content.slice(0, 140)}…` : m.content;
+        lines.push(`*${m.category}*`, `${text}`, '');
+      }
+      if (memories.length > 10) lines.push(`_…and ${memories.length - 10} more._`);
+    }
+
+    await this.editMessageText(chatId, messageId, lines.join('\n'), {
+      inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projectId}` }]],
+    });
   }
 
   // Runs a real sync of Trello + Email integrations for a project and

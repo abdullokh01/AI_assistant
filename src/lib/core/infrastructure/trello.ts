@@ -102,7 +102,7 @@ export class TrelloService {
       const lists = await listsRes.json();
 
       // 2. Fetch Cards
-      const cardsUrl = `https://api.trello.com/1/boards/${boardId}/cards?key=${apiKey}&token=${token}&fields=name,desc,due,labels,idList`;
+      const cardsUrl = `https://api.trello.com/1/boards/${boardId}/cards?key=${apiKey}&token=${token}&fields=name,desc,due,labels,idList,dateLastActivity`;
       const cardsRes = await fetch(cardsUrl);
       if (!cardsRes.ok) throw new Error('Failed to fetch Trello cards');
       const cards = await cardsRes.json();
@@ -149,6 +149,9 @@ export class TrelloService {
             status,
             due: card.due,
             labels: card.labels || [],
+            // Trello's own last-change timestamp — lets the daily report tell
+            // "moved today" apart from "has been Done for months".
+            lastActivity: card.dateLastActivity,
           };
         });
 

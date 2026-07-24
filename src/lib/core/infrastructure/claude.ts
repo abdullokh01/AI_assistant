@@ -27,8 +27,11 @@ export class ClaudeService {
 
     try {
       const response = await this.client.messages.create({
-        model: 'claude-opus-4-8',
+        model: 'claude-sonnet-5',
         max_tokens: maxTokens,
+        // These calls are structured extraction and report writing, not deep
+        // reasoning; medium keeps latency sane across a whole inbox sync.
+        output_config: { effort: 'medium' },
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       });

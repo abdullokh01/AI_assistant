@@ -39,6 +39,7 @@ const mapTask = (db: any): Task => ({
   assigneeId: db.assignee_id,
   dueDate: db.due_date ? new Date(db.due_date) : undefined,
   labels: db.labels || [],
+  sourceUpdatedAt: db.source_updated_at ? new Date(db.source_updated_at) : undefined,
   createdAt: new Date(db.created_at),
   updatedAt: new Date(db.updated_at),
 });
@@ -226,6 +227,11 @@ export class TaskRepository implements ITaskRepository {
         source_id: card.id,
         due_date: card.due ? new Date(card.due).toISOString() : null,
         labels: card.labels?.map((l: any) => l.name) || [],
+        // Trello's own last-change time. updated_at can't be used for this —
+        // the handle_updated_at() trigger overwrites it with NOW() on every sync.
+        source_updated_at: card.lastActivity
+          ? new Date(card.lastActivity).toISOString()
+          : null,
       };
 
       // Check if it already exists
@@ -237,10 +243,18 @@ export class TaskRepository implements ITaskRepository {
         .eq('source_id', card.id)
         .maybeSingle();
 
-      if (existing) {
-        await supabaseAdmin.from('tasks').update(taskData).eq('id', existing.id);
-      } else {
-        await supabaseAdmin.from('tasks').insert(taskData);
+      const write = (payload: any) =>
+        existing
+          ? supabaseAdmin.from('tasks').update(payload).eq('id', existing.id)
+          : supabaseAdmin.from('tasks').insert(payload);
+
+      const { error } = await write(taskData);
+
+      // Tolerate a database that hasn't run the source_updated_at migration yet:
+      // sync the card without it rather than failing the whole run.
+      if (error && /source_updated_at/.test(error.message)) {
+        const { source_updated_at, ...withoutSourceUpdatedAt } = taskData;
+        await write(withoutSourceUpdatedAt);
       }
     }
   }

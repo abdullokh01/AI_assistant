@@ -50,8 +50,15 @@ export async function POST(request: Request) {
     const unreadEmails = await emailRepo.getUnreadEmails(projectId);
     const openQuestions = await questionRepo.listOpen(projectId);
 
-    // Filter tasks
-    const completedTasks = tasks.filter(t => t.status === 'Done');
+    // Filter tasks.
+    // "Completed" means finished ON the report date — a Done card that last
+    // changed months ago is history, not today's delivery. In Progress and
+    // Blocked are current-state, so they are not date-filtered.
+    const onReportDate = (d?: Date) =>
+      !!d && new Date(d).toISOString().split('T')[0] === reportDate;
+
+    const allDoneTasks = tasks.filter(t => t.status === 'Done');
+    const completedTasks = allDoneTasks.filter(t => onReportDate(t.sourceUpdatedAt));
     const inProgressTasks = tasks.filter(t => t.status === 'In Progress');
     const blockedTasks = tasks.filter(t => t.status === 'Blocked');
 
