@@ -87,7 +87,7 @@ export default function HealthIndicator({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-black text-white tracking-tighter cyber-mono">{Math.round(confidenceScore)}%</span>
-            <span className="text-[7px] font-bold tracking-widest text-purple-400 uppercase">CLAUDE_3.5</span>
+            <span className="text-[7px] font-bold tracking-widest text-purple-400 uppercase">SONNET_5</span>
           </div>
         </div>
       </div>

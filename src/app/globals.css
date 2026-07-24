@@ -158,6 +158,209 @@ body::after {
   text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
 }
 
+/* ============================================================
+   PREDATOR / HUD — display type, angular panels, report readout
+   ============================================================ */
+
+.font-display {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* Angular corner-cut panel — the Aorus/Predator "chamfer" look */
+.glass-panel {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% 100%,
+    16px 100%,
+    0 calc(100% - 16px)
+  );
+  border-radius: 0;
+}
+
+/* A brighter hairline that traces the chamfer on hover */
+.glass-panel:hover {
+  border-color: var(--accent-blue);
+}
+
+/* Panel + tag headers */
+.hud-panel-title {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d7f7ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+.hud-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 0.2rem 0.55rem;
+  background: rgba(0, 229, 255, 0.05);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* Report readout surface — dark instrument panel with a faint scan */
+.hud-readout {
+  background:
+    linear-gradient(180deg, rgba(4, 10, 22, 0.55), rgba(2, 6, 14, 0.75));
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  position: relative;
+}
+.hud-readout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 229, 255, 0.025) 0px,
+    rgba(0, 229, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ---- report content ---- */
+.hud-report {
+  position: relative;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  color: #b9c6d6;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hud-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #eafaff;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+  margin: 0 0 0.5rem;
+}
+
+/* Section header row: glyph chip + label + fading rule */
+.hud-section {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.35rem 0 0.65rem;
+}
+.hud-glyph {
+  font-size: 0.9rem;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.6));
+  flex: 0 0 auto;
+}
+.hud-section-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+  white-space: nowrap;
+}
+.hud-section-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.5), transparent);
+}
+
+.hud-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fb4c6;
+  margin: 0.9rem 0 0.35rem;
+}
+
+.hud-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-green);
+  margin: 0.6rem 0 0.1rem;
+}
+
+.hud-p { margin: 0.35rem 0; }
+
+.hud-list {
+  list-style: none;
+  margin: 0.2rem 0 0.4rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.hud-item {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding-left: 0.1rem;
+}
+
+/* Glowing diamond marker for bullets */
+.hud-marker {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.35rem;
+  background: var(--accent-blue);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+/* Numeric index chip for ordered lists */
+.hud-index {
+  flex: 0 0 auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 0.02rem 0.3rem;
+  background: rgba(0, 229, 255, 0.06);
+  letter-spacing: 0.05em;
+}
+
+.hud-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #5c7185;
+  padding: 1.5rem 0;
+}
+.hud-empty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
+  animation: arcPulse 2s infinite ease-in-out;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 4px;

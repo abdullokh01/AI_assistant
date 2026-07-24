@@ -13,6 +13,7 @@ import TelegramSyncWidget from '../components/TelegramSyncWidget';
 import MemoryExplorer from '../components/MemoryExplorer';
 import DailyLessonWidget from '../components/DailyLessonWidget';
 import PMAssistantWidget from '../components/PMAssistantWidget';
+import ReportView from '../components/ReportView';
 import { supabase } from '../lib/shared/supabase-client';
 
 // Simple UUID validator to distinguish database IDs from mock IDs
@@ -457,17 +458,12 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Summary report */}
             <div className="lg:col-span-2 glass-panel p-6 flex flex-col space-y-4">
-              <h3 className="font-extrabold text-base text-slate-200">Daily Executive Summary</h3>
-              <div className="flex-1 bg-[#101323]/25 border border-slate-850 p-5 rounded-xl text-xs text-slate-350 leading-relaxed font-sans prose prose-invert space-y-3 max-w-none">
-                {dailyReportMarkdown.split('\n').map((line, idx) => {
-                  if (line.startsWith('###')) {
-                    return <h4 key={idx} className="font-extrabold text-white text-sm mt-4 mb-2">{line.replace('###', '')}</h4>;
-                  }
-                  if (line.startsWith('-')) {
-                    return <li key={idx} className="ml-4 list-disc mb-1">{line.replace('-', '')}</li>;
-                  }
-                  return <p key={idx} className="mb-2">{line}</p>;
-                })}
+              <div className="flex items-center justify-between">
+                <h3 className="hud-panel-title">Daily Executive Summary</h3>
+                <span className="hud-tag">AI · SONNET 5</span>
+              </div>
+              <div className="flex-1 hud-readout p-5 rounded-xl overflow-y-auto">
+                <ReportView markdown={dailyReportMarkdown} />
               </div>
             </div>
 
