@@ -20,25 +20,22 @@ export class ClaudeService {
     }
   }
 
-  private async callClaude(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
+  private async callClaude(systemPrompt: string, userPrompt: string, maxTokens = 16000): Promise<string> {
     if (isSimulationMode || !this.client) {
       throw new Error('Claude SDK not initialized (Simulation Mode)');
     }
 
     try {
       const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-opus-4-8',
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
-        temperature: 0.1, // Low temp for structured outputs
       });
 
-      const block = response.content[0];
-      if (block.type === 'text') {
-        return block.text;
-      }
-      return '';
+      // Return the first text block (the response may also carry other block types)
+      const textBlock = response.content.find((b) => b.type === 'text');
+      return textBlock && textBlock.type === 'text' ? textBlock.text : '';
     } catch (e: any) {
       console.error('Claude API Error:', e);
       throw e;
