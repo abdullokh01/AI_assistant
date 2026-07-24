@@ -361,6 +361,134 @@ body::after {
   animation: arcPulse 2s infinite ease-in-out;
 }
 
+/* ============================================================
+   SIDEBAR RAIL — collapsible Predator navigation
+   ============================================================ */
+
+.hud-rail {
+  position: relative;
+}
+
+/* Animated cyan sweep along the top of the rail */
+.hud-rail-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+  background-size: 200% 100%;
+  animation: railSweep 5s linear infinite;
+  opacity: 0.7;
+  pointer-events: none;
+}
+@keyframes railSweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Collapse toggle — a chamfered chip straddling the rail edge */
+.hud-toggle {
+  position: absolute;
+  top: 84px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a1120;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-blue);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+  transition: all 0.25s ease;
+}
+.hud-toggle:hover {
+  background: var(--accent-blue);
+  color: #001018;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.6);
+}
+.hud-toggle-chevron {
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 700;
+  transition: transform 0.3s ease;
+}
+
+/* Nav item */
+.hud-nav {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c8ba0;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 0.2s ease;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+.hud-nav:hover {
+  color: var(--accent-blue);
+  background: rgba(0, 229, 255, 0.04);
+}
+.hud-nav--active {
+  color: #eafaff;
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.35);
+  box-shadow: inset 0 0 16px rgba(0, 229, 255, 0.06), 0 0 14px rgba(0, 229, 255, 0.08);
+}
+
+/* Left accent bar that lights up on the active item */
+.hud-nav-bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--accent-blue);
+  box-shadow: 0 0 10px var(--accent-blue);
+  transition: height 0.25s ease;
+}
+.hud-nav--active .hud-nav-bar { height: 60%; }
+
+.hud-nav-label { white-space: nowrap; }
+
+/* Run diagnostic button */
+.hud-diagnostic {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+  background: transparent;
+  border: 1px solid var(--accent-blue);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: all 0.2s ease;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
+}
+.hud-diagnostic:hover:not(:disabled) {
+  background: var(--accent-blue);
+  color: #001018;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.5);
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
