@@ -170,17 +170,6 @@ export default function FinanceWidget() {
       })
       .join('');
 
-    const projMax = agg.byProject.length ? agg.byProject[0].amount : 1;
-    const projectBars = agg.byProject
-      .map(
-        (p) => `<div class="bar-row">
-          <span class="bar-label">${p.project}</span>
-          <span class="bar-track"><span class="bar-fill" style="width:${(p.amount / projMax) * 100}%"></span></span>
-          <span class="bar-val">${fmtM(p.amount)}</span>
-        </div>`
-      )
-      .join('');
-
     const monthMax = agg.byMonth.length ? Math.max(...agg.byMonth.map((m) => m.amount)) : 1;
     const monthCols = agg.byMonth
       .map(
@@ -194,44 +183,40 @@ export default function FinanceWidget() {
 
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Asoschi — Financial Report</title>
 <style>
-  @page { size: A4; margin: 14mm; }
+  @page { size: A4; margin: 11mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1c2b29; background: #fff; font-size: 12px; line-height: 1.5; }
-  .hero { background: linear-gradient(135deg, #16c0a3 0%, #47d67f 100%); color: #fff; border-radius: 16px; padding: 26px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .brand { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1c2b29; background: #fff; font-size: 11px; line-height: 1.4; }
+  .hero { background: linear-gradient(135deg, #16c0a3 0%, #47d67f 100%); color: #fff; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .brand { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
   .brand span { opacity: .85; font-weight: 600; }
-  .hero h1 { font-size: 22px; font-weight: 800; margin-top: 14px; }
-  .hero p { opacity: .9; margin-top: 4px; font-size: 12px; }
-  .meta { text-align: right; font-size: 11px; opacity: .95; }
-  .meta b { display:block; font-size: 13px; }
-  .section-title { font-size: 14px; font-weight: 800; color: #0f7a63; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e3efec; }
-  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
-  .kpi { background: #f6faf9; border: 1px solid #e3efec; border-radius: 12px; padding: 14px; }
-  .kpi .l { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #6b8480; }
-  .kpi .v { font-size: 18px; font-weight: 800; margin-top: 4px; color: #123; }
-  .kpi .u { font-size: 10px; color: #8aa; margin-top: 2px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #6b8480; padding: 7px 10px; border-bottom: 2px solid #e3efec; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eef4f2; }
+  .hero h1 { font-size: 18px; font-weight: 800; margin-top: 8px; }
+  .hero p { opacity: .9; margin-top: 2px; font-size: 11px; }
+  .meta { text-align: right; font-size: 10px; opacity: .95; }
+  .meta b { display:block; font-size: 12px; }
+  .section-title { font-size: 12px; font-weight: 800; color: #0f7a63; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #e3efec; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 12px; }
+  .kpi { background: #f6faf9; border: 1px solid #e3efec; border-radius: 10px; padding: 10px 12px; }
+  .kpi .l { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #6b8480; }
+  .kpi .v { font-size: 16px; font-weight: 800; margin-top: 3px; color: #123; }
+  .kpi .u { font-size: 9px; color: #8aa; margin-top: 1px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+  th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #6b8480; padding: 5px 9px; border-bottom: 2px solid #e3efec; }
+  td { padding: 5px 9px; border-bottom: 1px solid #eef4f2; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   th.num { text-align: right; }
   .over { color: #d64545; font-weight: 700; }
   .under { color: #17a06a; font-weight: 600; }
   .muted { color: #aaa; }
-  .bar-row { display: grid; grid-template-columns: 90px 1fr 60px; align-items: center; gap: 10px; margin: 6px 0; }
-  .bar-label { font-size: 11px; font-weight: 600; }
-  .bar-track { height: 9px; background: #eef4f2; border-radius: 5px; overflow: hidden; }
-  .bar-fill { display: block; height: 100%; background: linear-gradient(90deg, #16c0a3, #47d67f); }
-  .bar-val { text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: #456; }
-  .trend { display: flex; align-items: flex-end; gap: 6px; height: 160px; padding-top: 20px; border-bottom: 1px solid #e3efec; }
-  .mcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
-  .mbar { width: 60%; background: linear-gradient(180deg, #16c0a3, #9fe8c8); border-radius: 3px 3px 0 0; }
-  .mval { font-size: 8px; color: #789; }
-  .mlabel { font-size: 8px; color: #9ab; }
-  .foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e3efec; display: flex; justify-content: space-between; font-size: 10px; color: #8aa; }
-  .signed { margin-top: 22px; }
-  .signed .by { font-weight: 800; font-size: 13px; color: #123; }
-  .signed .role { font-size: 11px; color: #6b8480; }
+  .trend { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding-top: 16px; border-bottom: 1px solid #e3efec; }
+  .mcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+  .mbar { width: 62%; background: linear-gradient(180deg, #16c0a3, #9fe8c8); border-radius: 3px 3px 0 0; }
+  .mval { font-size: 7.5px; color: #789; }
+  .mlabel { font-size: 7.5px; color: #9ab; }
+  .foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e3efec; display: flex; justify-content: space-between; font-size: 9px; color: #8aa; }
+  .signed { margin-top: 16px; }
+  .signed .by { font-weight: 800; font-size: 12px; color: #123; }
+  .signed .role { font-size: 10px; color: #6b8480; }
   @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style></head><body>
   <div class="hero">
@@ -259,9 +244,6 @@ export default function FinanceWidget() {
     <thead><tr><th>Project</th><th class="num">Budget</th><th class="num">Spent</th><th>Status</th></tr></thead>
     <tbody>${budgetRows}</tbody>
   </table>
-
-  <div class="section-title">Spend by Project</div>
-  ${projectBars}
 
   <div class="section-title">Monthly Spend Trend</div>
   <div class="trend">${monthCols}</div>
