@@ -21,20 +21,22 @@ type Row = {
 // GET — salary + expense ledgers plus combined aggregates for the charts.
 export async function GET() {
   try {
-    const [salRes, expRes] = await Promise.all([
+    const [salRes, expRes, budRes] = await Promise.all([
       supabaseAdmin
         .from('finance_salaries')
         .select('*')
         .order('period_year', { ascending: false })
         .order('period_month', { ascending: false })
         .order('amount_uzs', { ascending: false }),
-      // Expenses table may not exist yet on an un-migrated DB — tolerate that.
+      // These tables may not exist yet on an un-migrated DB — tolerate that.
       supabaseAdmin.from('finance_expenses').select('*').order('spent_date', { ascending: false }),
+      supabaseAdmin.from('finance_budgets').select('*'),
     ]);
 
     if (salRes.error) throw salRes.error;
     const rows = (salRes.data || []) as Row[];
     const expenses = (expRes.error ? [] : expRes.data || []) as any[];
+    const budgets = (budRes.error ? [] : budRes.data || []) as { project: string; budget_uzs: number }[];
 
     const byProject: Record<string, number> = {};
     const byMonth: Record<string, number> = {};
@@ -57,10 +59,26 @@ export async function GET() {
       bump(e.project || 'General', String(e.spent_date).slice(0, 7), amt);
     }
 
+    // Budget vs actual per project. Include every project that has spend or a
+    // budget set, so a budgeted project with no spend still shows.
+    const budgetMap: Record<string, number> = {};
+    for (const b of budgets) budgetMap[b.project] = Number(b.budget_uzs);
+    const projectsUnion = Array.from(new Set([...Object.keys(byProject), ...Object.keys(budgetMap)]));
+    const budgetStatus = projectsUnion
+      .map((project) => {
+        const spent = byProject[project] || 0;
+        const budget = budgetMap[project] ?? null;
+        const remaining = budget == null ? null : budget - spent;
+        const pct = budget && budget > 0 ? (spent / budget) * 100 : null;
+        return { project, budget, spent, remaining, pct, over: budget != null && spent > budget };
+      })
+      .sort((a, b) => b.spent - a.spent);
+
     return NextResponse.json({
       success: true,
       rows,
       expenses,
+      budgets,
       aggregates: {
         total: salaryTotal + expenseTotal,
         salaryTotal,
@@ -71,6 +89,7 @@ export async function GET() {
         byMonth: Object.entries(byMonth)
           .map(([month, amount]) => ({ month, amount }))
           .sort((a, b) => a.month.localeCompare(b.month)),
+        budgetStatus,
       },
     });
   } catch (e: any) {

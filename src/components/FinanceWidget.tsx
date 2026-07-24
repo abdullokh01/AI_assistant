@@ -28,12 +28,21 @@ interface Expense {
   comment?: string;
   created_at: string;
 }
+interface BudgetStatus {
+  project: string;
+  budget: number | null;
+  spent: number;
+  remaining: number | null;
+  pct: number | null;
+  over: boolean;
+}
 interface Aggregates {
   total: number;
   salaryTotal: number;
   expenseTotal: number;
   byProject: { project: string; amount: number }[];
   byMonth: { month: string; amount: number }[];
+  budgetStatus: BudgetStatus[];
 }
 
 const MONTH_LABELS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -53,6 +62,7 @@ export default function FinanceWidget() {
   const [monthFilter, setMonthFilter] = useState('all');
   const [saving, setSaving] = useState(false);
   const [savingExp, setSavingExp] = useState(false);
+  const [budgetEdits, setBudgetEdits] = useState<Record<string, string>>({});
 
   const now = new Date();
   const [form, setForm] = useState({
@@ -129,6 +139,24 @@ export default function FinanceWidget() {
       const res = await fetch(`/api/finance?id=${row.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to delete');
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const saveBudget = async (project: string) => {
+    const raw = budgetEdits[project];
+    if (raw == null || raw === '') return;
+    try {
+      const res = await fetch('/api/finance/budgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project, budget_uzs: Number(raw) }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to save budget');
+      setBudgetEdits((m) => { const n = { ...m }; delete n[project]; return n; });
       await load();
     } catch (e: any) {
       setError(e.message);
@@ -231,6 +259,55 @@ export default function FinanceWidget() {
           <p className="hud-empty justify-center">NO LEDGER DATA — run the Excel history import (see notes).</p>
         </div>
       )}
+
+      {/* BUDGET vs ACTUAL */}
+      <div className="glass-panel p-6 space-y-4">
+        <h3 className="font-extrabold text-base text-slate-200">Budget vs Actual · by Project</h3>
+        <p className="text-[11px] text-slate-500 font-mono -mt-2">
+          Type a budget for any project and press Enter. Spend = salaries + expenses.
+        </p>
+        <div className="space-y-3">
+          {agg?.budgetStatus.map((b) => {
+            const editing = budgetEdits[b.project] ?? (b.budget != null ? String(b.budget) : '');
+            const pct = b.pct;
+            const barColor = b.over ? '#ff3366' : pct != null && pct > 85 ? '#ff9f1c' : '#00ffaa';
+            return (
+              <div key={b.project} className="fin-budget-row">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="fin-proj-chip shrink-0" style={{ color: colorFor(b.project, projectNames), borderColor: `${colorFor(b.project, projectNames)}55` }}>
+                    {b.project}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono text-slate-500 uppercase">Budget</span>
+                  <input
+                    type="number"
+                    value={editing}
+                    onChange={(e) => setBudgetEdits((m) => ({ ...m, [b.project]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') saveBudget(b.project); }}
+                    onBlur={() => { if (budgetEdits[b.project] != null) saveBudget(b.project); }}
+                    placeholder="—"
+                    className="fin-input !py-1 w-32 text-right"
+                  />
+                </div>
+                <div className="fin-budget-bar-wrap">
+                  <div className="fin-bar-track">
+                    <div className="fin-bar-fill" style={{ width: `${pct == null ? 0 : Math.min(pct, 100)}%`, background: barColor, boxShadow: `0 0 10px ${barColor}66` }} />
+                  </div>
+                </div>
+                <div className="text-right whitespace-nowrap">
+                  <span className="font-mono text-xs text-slate-200 tabular-nums">{fmtM(b.spent)}</span>
+                  {b.budget != null && b.budget > 0 && (
+                    <span className="font-mono text-[10px] ml-2" style={{ color: barColor }}>
+                      {b.over ? `over ${fmtM(Math.abs(b.remaining!))}` : `${fmtM(b.remaining!)} left`} · {Math.round(pct!)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
