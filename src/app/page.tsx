@@ -14,6 +14,7 @@ import MemoryExplorer from '../components/MemoryExplorer';
 import DailyLessonWidget from '../components/DailyLessonWidget';
 import PMAssistantWidget from '../components/PMAssistantWidget';
 import ReportView from '../components/ReportView';
+import AuthGate from '../components/AuthGate';
 import { supabase } from '../lib/shared/supabase-client';
 
 // Simple UUID validator to distinguish database IDs from mock IDs
@@ -404,6 +405,7 @@ export default function Home() {
   };
 
   return (
+    <AuthGate>
     <DashboardLayout
       activeTab={activeTab}
       setActiveTab={setActiveTab}
@@ -566,5 +568,6 @@ export default function Home() {
         />
       )}
     </DashboardLayout>
+    </AuthGate>
   );
 }

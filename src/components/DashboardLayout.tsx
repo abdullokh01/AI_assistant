@@ -4,6 +4,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { supabase } from '../lib/shared/supabase-client';
 
 interface SidebarProps {
   activeTab: string;
@@ -179,6 +180,13 @@ export default function DashboardLayout({
                 style={{ clipPath: 'polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px))' }}>
                 AI
               </div>
+              <button
+                onClick={() => supabase.auth.signOut()}
+                title="Terminate session"
+                className="hud-logout"
+              >
+                ⏻
+              </button>
             </div>
           </div>
         </header>
