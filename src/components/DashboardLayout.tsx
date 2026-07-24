@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { id: 'emails', label: 'Inbox Streams', icon: '✉️' },
   { id: 'trello', label: 'Agile Kanban', icon: '📋' },
   { id: 'telegram', label: 'Telegram Bot', icon: '🤖' },
+  { id: 'finance', label: 'Finance', icon: '💰' },
   { id: 'memory', label: 'Core Memory', icon: '🧠' },
   { id: 'learning', label: 'CEO Lesson', icon: '🎓' },
   { id: 'pm', label: 'PM Assistant', icon: '📝' },

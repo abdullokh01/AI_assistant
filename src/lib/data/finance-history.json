@@ -1,0 +1,947 @@
+[
+{
+"year": 2025,
+"month": 8,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Horeca",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Horeca",
+"status": "",
+"amount": 5000000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Исмоил",
+"position": "Senior Frontend",
+"project": "Horeca",
+"status": "",
+"amount": 18675000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "",
+"amount": 7000000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Xolodilnik",
+"status": "",
+"amount": 24900000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Xolodilnik",
+"status": "",
+"amount": 24900000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Хамидова Хилола",
+"position": "UX/UI designer",
+"project": "Xolodilnik",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "",
+"amount": 9000000
+},
+{
+"year": 2025,
+"month": 8,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "",
+"amount": 9960000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Horeca",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Horeca",
+"status": "",
+"amount": 5000000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Исмоил",
+"position": "Senior Frontend",
+"project": "Horeca",
+"status": "",
+"amount": 18015000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "",
+"amount": 5000000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 24020000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Хамидова Хилола",
+"position": "UX/UI designer",
+"project": "Magnit",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "",
+"amount": 9000000
+},
+{
+"year": 2025,
+"month": 9,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "",
+"amount": 9608000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Magnit",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 8000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Илхомов Исмоил",
+"position": "Senior Frontend",
+"project": "Magnit",
+"status": "",
+"amount": 18000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "",
+"amount": 7000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Xolodilnik",
+"status": "",
+"amount": 1091000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 24000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Хамидова Хилола",
+"position": "UX/UI designer",
+"project": "Magnit",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "",
+"amount": 9000000
+},
+{
+"year": 2025,
+"month": 10,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "",
+"amount": 9600000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Magnit",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 5000000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "",
+"amount": 30000000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Илхомов Исмоил",
+"position": "Senior Frontend",
+"project": "Magnit",
+"status": "",
+"amount": 8113636
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "",
+"amount": 7000000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Magnit",
+"status": "",
+"amount": 6490909
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Magnit",
+"status": "",
+"amount": 8113636
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 23800000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Хамидова Хилола",
+"position": "UX/UI designer",
+"project": "Profpak",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "",
+"amount": 4500000
+},
+{
+"year": 2025,
+"month": 11,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "",
+"amount": 9520000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Magnit",
+"status": "",
+"amount": 10000000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 5000000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "",
+"amount": 30000000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Илхомов Исмоил",
+"position": "Senior Frontend",
+"project": "Magnit",
+"status": "",
+"amount": 15493636
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "",
+"amount": 7000000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Xolodilnik",
+"status": "",
+"amount": 7610909
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Magnit",
+"status": "",
+"amount": 11960000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "",
+"amount": 23920000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Хамидова Хилола",
+"position": "UX/UI designer",
+"project": "Profpak",
+"status": "",
+"amount": 6818182
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "",
+"amount": 9000000
+},
+{
+"year": 2025,
+"month": 12,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "",
+"amount": 9568000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 10000000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 5000000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 30000000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Илхомов Исмоил",
+"position": "Senior Frontend",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 5789318
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 24260000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 12130000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 24260000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 1,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Алиев Жамшид",
+"position": "Admin",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 10000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 5000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 30000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Admin",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Senior Mobile",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 21834000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 12130000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Халилов Нурмухамад",
+"position": "Senior Backend",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 24260000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Холмуминов Жамолиддин",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 2,
+"name": "Хусенов Жамшид",
+"position": "Junior Mobile",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "10",
+"position": "",
+"project": "Unassigned",
+"status": "",
+"amount": 117304500
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Алиев Жамшид",
+"position": "Администратор",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 9500000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Жураев Исмоил",
+"position": "Младший backend-разработчик",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 6650000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Илхомов Исмоил",
+"position": "Старший frontend-разработчик",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 5937000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Кулашов Озодбек",
+"position": "Старший DevOps инженер",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 21852000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Администратор",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Мобильный разработчик (средний уровень)",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 17299500
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Халилов Нурмухамад",
+"position": "Старший backend-разработчик",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 23066000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Холмуминов Жамолиддин",
+"position": "Младший backend-разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 3,
+"name": "Хусенов Жамшид",
+"position": "Младший мобильный разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 1909091
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 1389091
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Администратор",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Старший мобильный разработчик",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 4338182
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Халилов Нурмухамад",
+"position": "Старший backend-разработчик",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 21690909
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Холмуминов Жамолиддин",
+"position": "Младший backend-разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 8272727
+},
+{
+"year": 2026,
+"month": 4,
+"name": "Хусенов Жамшид",
+"position": "Младший мобильный разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 8000000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 24000000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Администратор",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Нематжонов Мухаммадильяс",
+"position": "Старший мобильный разработчик",
+"project": "Magnit",
+"status": "Онлайн",
+"amount": 3255000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Халилов Нурмухамад",
+"position": "Старший backend-разработчик",
+"project": "Aurum",
+"status": "Оффлайн",
+"amount": 23940000
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Холмуминов Жамолиддин",
+"position": "Младший backend-разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 7681818
+},
+{
+"year": 2026,
+"month": 5,
+"name": "Хусенов Жамшид",
+"position": "Младший мобильный разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 8000000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 35910000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Администратор",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 7000000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 11425909
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Халилов Нурмухамад",
+"position": "Старший backend-разработчик",
+"project": "Aurum",
+"status": "Оффлайн",
+"amount": 23940000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Холмуминов Жамолиддин",
+"position": "Младший backend-разработчик",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 6,
+"name": "Хусенов Жамшид",
+"position": "Младший мобильный разработчик",
+"project": "Magnit",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Жураев Исмоил",
+"position": "Junior Backend",
+"project": "Minex",
+"status": "Оффлайн",
+"amount": 10500000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Ибрагимов Абдуллох",
+"position": "ПМ",
+"project": "All",
+"status": "Оффлайн",
+"amount": 36030000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Мавлонхожаев Мохирбек",
+"position": "Администратор",
+"project": "Minex",
+"status": "Оффлайн",
+"amount": 8407000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Саидалиев Мухаммадсаид",
+"position": "Middle Mobile Developer",
+"project": "Aurum",
+"status": "Оффлайн",
+"amount": 11010000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Халилов Нурмухамад",
+"position": "Старший backend-разработчик",
+"project": "Aurum",
+"status": "Оффлайн",
+"amount": 26422000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Холмуминов Жамолиддин",
+"position": "Младший backend-разработчик",
+"project": "Profpak",
+"status": "Оффлайн",
+"amount": 13000000
+},
+{
+"year": 2026,
+"month": 7,
+"name": "Хусенов Жамшид",
+"position": "Младший мобильный разработчик",
+"project": "Minex",
+"status": "Оффлайн",
+"amount": 15500000
+}
+]

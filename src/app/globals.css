@@ -544,6 +544,150 @@ main h3.font-extrabold::before,
   );
 }
 
+/* ============================================================
+   FINANCE — KPI tiles, HUD charts, ledger table
+   ============================================================ */
+
+.fin-kpi-label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+.fin-kpi-value {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #eafaff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+}
+.fin-kpi-unit {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #667889;
+}
+
+/* Horizontal spend-by-project bars */
+.fin-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  overflow: hidden;
+}
+.fin-bar-fill {
+  height: 100%;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Monthly trend columns */
+.fin-trend {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  height: 200px;
+  padding-top: 1.2rem;
+}
+.fin-trend-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+.fin-trend-bar {
+  width: 70%;
+  min-height: 4px;
+  background: linear-gradient(180deg, var(--accent-blue), rgba(0, 229, 255, 0.25));
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fin-trend-col:hover .fin-trend-bar { background: linear-gradient(180deg, #00ffaa, rgba(0, 255, 170, 0.3)); }
+.fin-trend-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem;
+  color: #7c8ba0;
+  white-space: nowrap;
+}
+.fin-trend-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: #55677a;
+  letter-spacing: 0.03em;
+}
+
+/* Form fields */
+.fin-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.fin-flabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7c8ba0;
+}
+.fin-input {
+  width: 100%;
+  background: #090f1d;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  color: #dbe9f5;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.fin-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.2);
+}
+
+/* Ledger table */
+.fin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.fin-table thead th {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  white-space: nowrap;
+}
+.fin-table tbody td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #9fb0c2;
+}
+.fin-table tbody tr:hover td { background: rgba(0, 229, 255, 0.03); }
+
+.fin-proj-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
 /* Header logout / terminate-session control */
 .hud-logout {
   width: 2rem;

@@ -14,6 +14,7 @@ import MemoryExplorer from '../components/MemoryExplorer';
 import DailyLessonWidget from '../components/DailyLessonWidget';
 import PMAssistantWidget from '../components/PMAssistantWidget';
 import ReportView from '../components/ReportView';
+import FinanceWidget from '../components/FinanceWidget';
 import AuthGate from '../components/AuthGate';
 import { supabase } from '../lib/shared/supabase-client';
 
@@ -567,6 +568,9 @@ export default function Home() {
           documents={documents}
         />
       )}
+
+      {/* FINANCE SCREEN */}
+      {activeTab === 'finance' && <FinanceWidget />}
     </DashboardLayout>
     </AuthGate>
   );
