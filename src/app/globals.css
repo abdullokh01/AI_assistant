@@ -489,6 +489,61 @@ body::after {
   box-shadow: 0 0 22px rgba(0, 229, 255, 0.5);
 }
 
+/* ============================================================
+   GLOBAL WIDGET UPLIFT — restyle every page's panels to Predator
+   without touching each component. All widgets share .glass-panel
+   with <h3> section titles and <h4> sub-titles.
+   ============================================================ */
+
+/* Section titles across all widgets -> Orbitron HUD heading with accent bar */
+main h3.font-extrabold,
+.glass-panel > h3,
+.glass-panel h3.font-extrabold {
+  position: relative;
+  font-family: 'Orbitron', monospace !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #d7f7ff !important;
+  padding-left: 0.7rem;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+}
+main h3.font-extrabold::before,
+.glass-panel > h3::before,
+.glass-panel h3.font-extrabold::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0.95em;
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
+}
+
+/* Sub-titles -> mono technical label */
+.glass-panel h4.font-extrabold,
+.glass-panel h4.font-black {
+  font-family: 'JetBrains Mono', monospace !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Inner cards, inputs and buttons -> chamfered corners (skip pills & circles) */
+.glass-panel :is(.rounded-lg, .rounded-xl, .rounded-2xl):not(.rounded-full) {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+}
+
 /* Header logout / terminate-session control */
 .hud-logout {
   width: 2rem;
