@@ -299,7 +299,9 @@ export default function FinanceWidget() {
                   <span className="font-mono text-xs text-slate-200 tabular-nums">{fmtM(b.spent)}</span>
                   {b.budget != null && b.budget > 0 && (
                     <span className="font-mono text-[10px] ml-2" style={{ color: barColor }}>
-                      {b.over ? `over ${fmtM(Math.abs(b.remaining!))}` : `${fmtM(b.remaining!)} left`} · {Math.round(pct!)}%
+                      {b.over
+                        ? `over ${fmtM(Math.abs(b.remaining!))} · +${Math.round(pct! - 100)}%`
+                        : `${fmtM(b.remaining!)} left · ${Math.round(pct!)}% used`}
                     </span>
                   )}
                 </div>
