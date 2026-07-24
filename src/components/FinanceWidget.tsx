@@ -145,6 +145,149 @@ export default function FinanceWidget() {
     }
   };
 
+  // Build a print-ready A4 report styled like the Asoschi landing page
+  // (light, teal→green gradient header, clean white cards) and open the print
+  // dialog so it can be saved as PDF.
+  const downloadReport = () => {
+    if (!agg) return;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const budgetRows = agg.budgetStatus
+      .map((b) => {
+        const status = b.budget == null || b.budget === 0
+          ? '<span class="muted">—</span>'
+          : b.over
+            ? `<span class="over">over ${fmtUZS(Math.abs(b.remaining!))} · +${Math.round(b.pct! - 100)}%</span>`
+            : `<span class="under">${fmtUZS(b.remaining!)} left · ${Math.round(b.pct!)}%</span>`;
+        return `<tr>
+          <td>${b.project}</td>
+          <td class="num">${b.budget != null ? fmtUZS(b.budget) : '—'}</td>
+          <td class="num">${fmtUZS(b.spent)}</td>
+          <td>${status}</td>
+        </tr>`;
+      })
+      .join('');
+
+    const projMax = agg.byProject.length ? agg.byProject[0].amount : 1;
+    const projectBars = agg.byProject
+      .map(
+        (p) => `<div class="bar-row">
+          <span class="bar-label">${p.project}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${(p.amount / projMax) * 100}%"></span></span>
+          <span class="bar-val">${fmtM(p.amount)}</span>
+        </div>`
+      )
+      .join('');
+
+    const monthMax = agg.byMonth.length ? Math.max(...agg.byMonth.map((m) => m.amount)) : 1;
+    const monthCols = agg.byMonth
+      .map(
+        (m) => `<div class="mcol">
+          <span class="mval">${fmtM(m.amount)}</span>
+          <span class="mbar" style="height:${Math.max((m.amount / monthMax) * 120, 4)}px"></span>
+          <span class="mlabel">${m.month.slice(5)}/${m.month.slice(2, 4)}</span>
+        </div>`
+      )
+      .join('');
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Asoschi — Financial Report</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1c2b29; background: #fff; font-size: 12px; line-height: 1.5; }
+  .hero { background: linear-gradient(135deg, #16c0a3 0%, #47d67f 100%); color: #fff; border-radius: 16px; padding: 26px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .brand { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand span { opacity: .85; font-weight: 600; }
+  .hero h1 { font-size: 22px; font-weight: 800; margin-top: 14px; }
+  .hero p { opacity: .9; margin-top: 4px; font-size: 12px; }
+  .meta { text-align: right; font-size: 11px; opacity: .95; }
+  .meta b { display:block; font-size: 13px; }
+  .section-title { font-size: 14px; font-weight: 800; color: #0f7a63; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e3efec; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+  .kpi { background: #f6faf9; border: 1px solid #e3efec; border-radius: 12px; padding: 14px; }
+  .kpi .l { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #6b8480; }
+  .kpi .v { font-size: 18px; font-weight: 800; margin-top: 4px; color: #123; }
+  .kpi .u { font-size: 10px; color: #8aa; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #6b8480; padding: 7px 10px; border-bottom: 2px solid #e3efec; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eef4f2; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .over { color: #d64545; font-weight: 700; }
+  .under { color: #17a06a; font-weight: 600; }
+  .muted { color: #aaa; }
+  .bar-row { display: grid; grid-template-columns: 90px 1fr 60px; align-items: center; gap: 10px; margin: 6px 0; }
+  .bar-label { font-size: 11px; font-weight: 600; }
+  .bar-track { height: 9px; background: #eef4f2; border-radius: 5px; overflow: hidden; }
+  .bar-fill { display: block; height: 100%; background: linear-gradient(90deg, #16c0a3, #47d67f); }
+  .bar-val { text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: #456; }
+  .trend { display: flex; align-items: flex-end; gap: 6px; height: 160px; padding-top: 20px; border-bottom: 1px solid #e3efec; }
+  .mcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+  .mbar { width: 60%; background: linear-gradient(180deg, #16c0a3, #9fe8c8); border-radius: 3px 3px 0 0; }
+  .mval { font-size: 8px; color: #789; }
+  .mlabel { font-size: 8px; color: #9ab; }
+  .foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e3efec; display: flex; justify-content: space-between; font-size: 10px; color: #8aa; }
+  .signed { margin-top: 22px; }
+  .signed .by { font-weight: 800; font-size: 13px; color: #123; }
+  .signed .role { font-size: 11px; color: #6b8480; }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+  <div class="hero">
+    <div>
+      <div class="brand">🌿 asoschi <span>IT</span></div>
+      <h1>Financial Report</h1>
+      <p>Salary &amp; expense overview · budget vs actual</p>
+    </div>
+    <div class="meta">
+      <b>${dateStr}</b>
+      Generated ${timeStr}<br/>
+      12-month ledger
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Total Spend</div><div class="v">${fmtUZS(agg.total)}</div><div class="u">UZS · all time</div></div>
+    <div class="kpi"><div class="l">Payroll</div><div class="v">${fmtM(agg.salaryTotal)}</div><div class="u">salaries</div></div>
+    <div class="kpi"><div class="l">Other Costs</div><div class="v">${fmtM(agg.expenseTotal)}</div><div class="u">expenses</div></div>
+    <div class="kpi"><div class="l">Projects</div><div class="v">${projectNames.length}</div><div class="u">cost centers</div></div>
+  </div>
+
+  <div class="section-title">Budget vs Actual · by Project</div>
+  <table>
+    <thead><tr><th>Project</th><th class="num">Budget</th><th class="num">Spent</th><th>Status</th></tr></thead>
+    <tbody>${budgetRows}</tbody>
+  </table>
+
+  <div class="section-title">Spend by Project</div>
+  ${projectBars}
+
+  <div class="section-title">Monthly Spend Trend</div>
+  <div class="trend">${monthCols}</div>
+
+  <div class="signed">
+    <div class="by">Printed by Abdullokh Ibragimov</div>
+    <div class="role">Asoschi IT Team · Project Manager</div>
+  </div>
+
+  <div class="foot">
+    <span>© ${now.getFullYear()} Asoschi IT</span>
+    <span>Confidential · internal use only</span>
+  </div>
+
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };</script>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) {
+      setError('Popup blocked — allow popups to download the report.');
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+  };
+
   const saveBudget = async (project: string) => {
     const raw = budgetEdits[project];
     if (raw == null || raw === '') return;
@@ -227,6 +370,16 @@ export default function FinanceWidget() {
 
   return (
     <div className="space-y-6">
+      {/* HEADER + DOWNLOAD */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="font-display text-lg font-bold uppercase tracking-wider text-cyan-200" style={{ textShadow: '0 0 14px rgba(0,229,255,0.3)' }}>
+          Finance Command
+        </h2>
+        <button onClick={downloadReport} disabled={!agg} className="hud-diagnostic" style={{ width: 'auto', padding: '0.6rem 1.2rem' }}>
+          ⭳ DOWNLOAD REPORT
+        </button>
+      </div>
+
       {/* KPI TILES */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-panel p-5">
