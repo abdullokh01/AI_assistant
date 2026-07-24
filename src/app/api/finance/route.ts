@@ -18,34 +18,53 @@ type Row = {
   source?: string;
 };
 
-// GET — full ledger plus pre-computed aggregates for the charts.
+// GET — salary + expense ledgers plus combined aggregates for the charts.
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('finance_salaries')
-      .select('*')
-      .order('period_year', { ascending: false })
-      .order('period_month', { ascending: false })
-      .order('amount_uzs', { ascending: false });
+    const [salRes, expRes] = await Promise.all([
+      supabaseAdmin
+        .from('finance_salaries')
+        .select('*')
+        .order('period_year', { ascending: false })
+        .order('period_month', { ascending: false })
+        .order('amount_uzs', { ascending: false }),
+      // Expenses table may not exist yet on an un-migrated DB — tolerate that.
+      supabaseAdmin.from('finance_expenses').select('*').order('spent_date', { ascending: false }),
+    ]);
 
-    if (error) throw error;
-    const rows = (data || []) as Row[];
+    if (salRes.error) throw salRes.error;
+    const rows = (salRes.data || []) as Row[];
+    const expenses = (expRes.error ? [] : expRes.data || []) as any[];
 
     const byProject: Record<string, number> = {};
     const byMonth: Record<string, number> = {};
+    const bump = (project: string, monthKey: string, amount: number) => {
+      byProject[project] = (byProject[project] || 0) + amount;
+      byMonth[monthKey] = (byMonth[monthKey] || 0) + amount;
+    };
+
+    let salaryTotal = 0;
     for (const r of rows) {
-      byProject[r.project] = (byProject[r.project] || 0) + Number(r.amount_uzs);
-      const key = `${r.period_year}-${String(r.period_month).padStart(2, '0')}`;
-      byMonth[key] = (byMonth[key] || 0) + Number(r.amount_uzs);
+      const amt = Number(r.amount_uzs);
+      salaryTotal += amt;
+      bump(r.project, `${r.period_year}-${String(r.period_month).padStart(2, '0')}`, amt);
     }
 
-    const total = rows.reduce((s, r) => s + Number(r.amount_uzs), 0);
+    let expenseTotal = 0;
+    for (const e of expenses) {
+      const amt = Number(e.amount_uzs);
+      expenseTotal += amt;
+      bump(e.project || 'General', String(e.spent_date).slice(0, 7), amt);
+    }
 
     return NextResponse.json({
       success: true,
       rows,
+      expenses,
       aggregates: {
-        total,
+        total: salaryTotal + expenseTotal,
+        salaryTotal,
+        expenseTotal,
         byProject: Object.entries(byProject)
           .map(([project, amount]) => ({ project, amount }))
           .sort((a, b) => b.amount - a.amount),
@@ -87,6 +106,21 @@ export async function POST(request: Request) {
 
     if (error) throw error;
     return NextResponse.json({ success: true, row: data });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+// DELETE — remove a single ledger row by id (?id=...).
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const { error } = await supabaseAdmin.from('finance_salaries').delete().eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

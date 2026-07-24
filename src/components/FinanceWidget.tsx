@@ -18,8 +18,20 @@ interface Row {
   amount_uzs: number;
   source?: string;
 }
+interface Expense {
+  id: string;
+  spent_date: string;
+  purpose: string;
+  spender?: string;
+  project: string;
+  amount_uzs: number;
+  comment?: string;
+  created_at: string;
+}
 interface Aggregates {
   total: number;
+  salaryTotal: number;
+  expenseTotal: number;
   byProject: { project: string; amount: number }[];
   byMonth: { month: string; amount: number }[];
 }
@@ -34,11 +46,13 @@ const fmtM = (n: number) => `${(n / 1_000_000).toFixed(1)}M`;
 
 export default function FinanceWidget() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [monthFilter, setMonthFilter] = useState('all');
   const [saving, setSaving] = useState(false);
+  const [savingExp, setSavingExp] = useState(false);
 
   const now = new Date();
   const [form, setForm] = useState({
@@ -49,6 +63,15 @@ export default function FinanceWidget() {
     project: '',
     amount_uzs: '',
   });
+  const todayISO = now.toISOString().slice(0, 10);
+  const [expForm, setExpForm] = useState({
+    spent_date: todayISO,
+    purpose: '',
+    spender: '',
+    project: '',
+    amount_uzs: '',
+    comment: '',
+  });
 
   const load = async () => {
     setLoading(true);
@@ -58,6 +81,7 @@ export default function FinanceWidget() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to load finance data');
       setRows(data.rows);
+      setExpenses(data.expenses || []);
       setAgg(data.aggregates);
     } catch (e: any) {
       setError(e.message);
@@ -99,6 +123,51 @@ export default function FinanceWidget() {
     [rows, latestMonthKey]
   );
 
+  const remove = async (row: Row) => {
+    if (!confirm(`Delete ${row.employee_name} — ${MONTH_LABELS[row.period_month]} ${row.period_year} (${fmtUZS(row.amount_uzs)} UZS)?`)) return;
+    try {
+      const res = await fetch(`/api/finance?id=${row.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to delete');
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const submitExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingExp(true);
+    setError('');
+    try {
+      const res = await fetch('/api/finance/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...expForm, project: expForm.project || 'General' }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to save');
+      setExpForm((f) => ({ ...f, purpose: '', spender: '', amount_uzs: '', comment: '' }));
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSavingExp(false);
+    }
+  };
+
+  const removeExpense = async (ex: Expense) => {
+    if (!confirm(`Delete expense "${ex.purpose}" (${fmtUZS(ex.amount_uzs)} UZS)?`)) return;
+    try {
+      const res = await fetch(`/api/finance/expenses?id=${ex.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to delete');
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -135,7 +204,9 @@ export default function FinanceWidget() {
         <div className="glass-panel p-5">
           <span className="fin-kpi-label">Total Spend · All Time</span>
           <span className="fin-kpi-value">{agg ? fmtUZS(agg.total) : '—'}</span>
-          <span className="fin-kpi-unit">UZS</span>
+          <span className="fin-kpi-unit">
+            {agg ? `UZS · payroll ${fmtM(agg.salaryTotal)} · other ${fmtM(agg.expenseTotal)}` : 'UZS'}
+          </span>
         </div>
         <div className="glass-panel p-5">
           <span className="fin-kpi-label">{latestMonthKey ? monthKeyLabel(latestMonthKey) : 'Latest Month'}</span>
@@ -253,7 +324,7 @@ export default function FinanceWidget() {
           <table className="fin-table">
             <thead>
               <tr>
-                <th>Period</th><th>Employee</th><th>Position</th><th>Project</th><th className="text-right">Amount UZS</th><th>Src</th>
+                <th>Period</th><th>Employee</th><th>Position</th><th>Project</th><th className="text-right">Amount UZS</th><th>Src</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -269,12 +340,85 @@ export default function FinanceWidget() {
                   </td>
                   <td className="text-right font-mono tabular-nums text-slate-200">{fmtUZS(r.amount_uzs)}</td>
                   <td className="text-[9px] font-mono text-slate-600 uppercase">{r.source}</td>
+                  <td className="text-right">
+                    <button onClick={() => remove(r)} title="Delete row" className="fin-del">✕</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {visibleRows.length === 0 && !loading && (
             <p className="text-center text-xs text-slate-600 py-6">No entries for this filter.</p>
+          )}
+        </div>
+      </div>
+
+      {/* ADD EXPENSE (non-salary costs) */}
+      <div className="glass-panel p-6 space-y-4">
+        <h3 className="font-extrabold text-base text-slate-200">Add Expense · Other Costs</h3>
+        <form onSubmit={submitExpense} className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+          <label className="fin-field">
+            <span className="fin-flabel">Spent date</span>
+            <input required type="date" value={expForm.spent_date} onChange={(e) => setExpForm({ ...expForm, spent_date: e.target.value })} className="fin-input" />
+          </label>
+          <label className="fin-field col-span-2">
+            <span className="fin-flabel">Purpose · nima uchun</span>
+            <input required value={expForm.purpose} onChange={(e) => setExpForm({ ...expForm, purpose: e.target.value })} className="fin-input" placeholder="Server, laptop, subscription…" />
+          </label>
+          <label className="fin-field">
+            <span className="fin-flabel">Spender · kim</span>
+            <input value={expForm.spender} onChange={(e) => setExpForm({ ...expForm, spender: e.target.value })} className="fin-input" placeholder="Name" />
+          </label>
+          <label className="fin-field">
+            <span className="fin-flabel">Project</span>
+            <input value={expForm.project} onChange={(e) => setExpForm({ ...expForm, project: e.target.value })} className="fin-input" placeholder="General" list="fin-projects" />
+          </label>
+          <label className="fin-field">
+            <span className="fin-flabel">Amount UZS</span>
+            <input required type="number" value={expForm.amount_uzs} onChange={(e) => setExpForm({ ...expForm, amount_uzs: e.target.value })} className="fin-input" placeholder="0" />
+          </label>
+          <label className="fin-field col-span-2 md:col-span-5">
+            <span className="fin-flabel">Comment</span>
+            <input value={expForm.comment} onChange={(e) => setExpForm({ ...expForm, comment: e.target.value })} className="fin-input" placeholder="Optional note" />
+          </label>
+          <button type="submit" disabled={savingExp} className="hud-diagnostic h-[38px]">
+            {savingExp ? '…' : '＋ ADD'}
+          </button>
+        </form>
+      </div>
+
+      {/* EXPENSE LEDGER */}
+      <div className="glass-panel p-6 space-y-4">
+        <h3 className="font-extrabold text-base text-slate-200">Expense Ledger · Other Costs</h3>
+        <div className="overflow-x-auto">
+          <table className="fin-table">
+            <thead>
+              <tr>
+                <th>Spent</th><th>Purpose</th><th>Spender</th><th>Project</th><th>Comment</th><th className="text-right">Amount UZS</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((ex) => (
+                <tr key={ex.id}>
+                  <td className="font-mono whitespace-nowrap text-slate-400">{ex.spent_date}</td>
+                  <td className="text-slate-200">{ex.purpose}</td>
+                  <td className="text-slate-400">{ex.spender}</td>
+                  <td>
+                    <span className="fin-proj-chip" style={{ color: colorFor(ex.project, projectNames), borderColor: `${colorFor(ex.project, projectNames)}55` }}>
+                      {ex.project}
+                    </span>
+                  </td>
+                  <td className="text-slate-500 max-w-[220px] truncate">{ex.comment}</td>
+                  <td className="text-right font-mono tabular-nums text-slate-200">{fmtUZS(ex.amount_uzs)}</td>
+                  <td className="text-right">
+                    <button onClick={() => removeExpense(ex)} title="Delete" className="fin-del">✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {expenses.length === 0 && !loading && (
+            <p className="text-center text-xs text-slate-600 py-6">No other expenses yet — add one above.</p>
           )}
         </div>
       </div>

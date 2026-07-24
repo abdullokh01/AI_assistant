@@ -677,6 +677,18 @@ main h3.font-extrabold::before,
 }
 .fin-table tbody tr:hover td { background: rgba(0, 229, 255, 0.03); }
 
+.fin-del {
+  color: #55677a;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+.fin-del:hover {
+  color: #ff3366;
+  border-color: rgba(255, 51, 102, 0.4);
+}
+
 .fin-proj-chip {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.62rem;
