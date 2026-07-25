@@ -150,17 +150,25 @@ export default function FinanceWidget() {
   // dialog so it can be saved as PDF.
   const downloadReport = () => {
     if (!agg) return;
+    const UZ_MONTHS = ['', 'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+    const UZ_SHORT = ['', 'Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dateStr = `${now.getDate()} ${UZ_MONTHS[now.getMonth() + 1]} ${now.getFullYear()}`;
     const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    // Reporting period from the first→last month present in the ledger.
+    const uzMonthYear = (key: string) => `${UZ_MONTHS[Number(key.slice(5))]} ${key.slice(0, 4)}`;
+    const firstMonth = agg.byMonth[0]?.month;
+    const lastMonth = agg.byMonth[agg.byMonth.length - 1]?.month;
+    const periodLabel = firstMonth && lastMonth ? `${uzMonthYear(firstMonth)} — ${uzMonthYear(lastMonth)}` : '';
 
     const budgetRows = agg.budgetStatus
       .map((b) => {
         const status = b.budget == null || b.budget === 0
           ? '<span class="muted">—</span>'
           : b.over
-            ? `<span class="over">over ${fmtUZS(Math.abs(b.remaining!))} · +${Math.round(b.pct! - 100)}%</span>`
-            : `<span class="under">${fmtUZS(b.remaining!)} left · ${Math.round(b.pct!)}%</span>`;
+            ? `<span class="over">${fmtUZS(Math.abs(b.remaining!))} oshdi · +${Math.round(b.pct! - 100)}%</span>`
+            : `<span class="under">${fmtUZS(b.remaining!)} qoldi · ${Math.round(b.pct!)}% ishlatildi</span>`;
         return `<tr>
           <td>${b.project}</td>
           <td class="num">${b.budget != null ? fmtUZS(b.budget) : '—'}</td>
@@ -176,7 +184,7 @@ export default function FinanceWidget() {
         (m) => `<div class="mcol">
           <span class="mval">${fmtM(m.amount)}</span>
           <span class="mbar" style="height:${Math.max((m.amount / monthMax) * 120, 4)}px"></span>
-          <span class="mlabel">${m.month.slice(5)}/${m.month.slice(2, 4)}</span>
+          <span class="mlabel">${UZ_SHORT[Number(m.month.slice(5))]}'${m.month.slice(2, 4)}</span>
         </div>`
       )
       .join('');
@@ -187,13 +195,12 @@ export default function FinanceWidget() {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1c2b29; background: #fff; font-size: 11px; line-height: 1.4; }
-  .hero { background: linear-gradient(135deg, #16c0a3 0%, #47d67f 100%); color: #fff; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .brand { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
-  .brand span { opacity: .85; font-weight: 600; }
-  .hero h1 { font-size: 18px; font-weight: 800; margin-top: 8px; }
-  .hero p { opacity: .9; margin-top: 2px; font-size: 11px; }
-  .meta { text-align: right; font-size: 10px; opacity: .95; }
-  .meta b { display:block; font-size: 12px; }
+  .hero { background: linear-gradient(135deg, #16c0a3 0%, #47d67f 100%); color: #fff; border-radius: 12px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .title-block { text-align: right; }
+  .hero h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .hero p { opacity: .9; margin-top: 3px; font-size: 11px; }
+  .meta { text-align: left; font-size: 10px; opacity: .95; line-height: 1.6; }
+  .meta b { display:block; font-size: 12px; margin-bottom: 2px; }
   .section-title { font-size: 12px; font-weight: 800; color: #0f7a63; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #e3efec; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 12px; }
   .kpi { background: #f6faf9; border: 1px solid #e3efec; border-radius: 10px; padding: 10px 12px; }
@@ -220,42 +227,41 @@ export default function FinanceWidget() {
   @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style></head><body>
   <div class="hero">
-    <div>
-      <div class="brand">🌿 asoschi <span>IT</span></div>
-      <h1>Financial Report</h1>
-      <p>Salary &amp; expense overview · budget vs actual</p>
-    </div>
     <div class="meta">
       <b>${dateStr}</b>
-      Generated ${timeStr}<br/>
-      12-month ledger
+      Yaratilgan vaqti: ${timeStr}<br/>
+      Hisobot davri: ${periodLabel}
+    </div>
+    <div class="title-block">
+      <h1>Asoschi — Moliyaviy hisoboti</h1>
+      <p>Oyliklar va xarajatlar · reja va haqiqiy</p>
     </div>
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="l">Total Spend</div><div class="v">${fmtUZS(agg.total)}</div><div class="u">UZS · all time</div></div>
-    <div class="kpi"><div class="l">Payroll</div><div class="v">${fmtM(agg.salaryTotal)}</div><div class="u">salaries</div></div>
-    <div class="kpi"><div class="l">Other Costs</div><div class="v">${fmtM(agg.expenseTotal)}</div><div class="u">expenses</div></div>
-    <div class="kpi"><div class="l">Projects</div><div class="v">${projectNames.length}</div><div class="u">cost centers</div></div>
+    <div class="kpi"><div class="l">Umumiy xarajat</div><div class="v">${fmtUZS(agg.total)}</div><div class="u">so'm · jami</div></div>
+    <div class="kpi"><div class="l">Oyliklar</div><div class="v">${fmtM(agg.salaryTotal)}</div><div class="u">ish haqi</div></div>
+    <div class="kpi"><div class="l">Boshqa xarajatlar</div><div class="v">${fmtM(agg.expenseTotal)}</div><div class="u">xarajatlar</div></div>
+    <div class="kpi"><div class="l">Loyihalar</div><div class="v">${projectNames.length}</div><div class="u">loyihalar soni</div></div>
   </div>
 
-  <div class="section-title">Budget vs Actual · by Project</div>
+  <div class="section-title">Reja va Haqiqiy · loyihalar bo'yicha</div>
   <table>
-    <thead><tr><th>Project</th><th class="num">Budget</th><th class="num">Spent</th><th>Status</th></tr></thead>
+    <thead><tr><th>Loyiha</th><th class="num">Reja (byudjet)</th><th class="num">Sarflandi</th><th>Holat</th></tr></thead>
     <tbody>${budgetRows}</tbody>
   </table>
 
-  <div class="section-title">Monthly Spend Trend</div>
+  <div class="section-title">Oylik xarajat dinamikasi</div>
   <div class="trend">${monthCols}</div>
 
   <div class="signed">
-    <div class="by">Printed by Abdullokh Ibragimov</div>
-    <div class="role">Asoschi IT Team · Project Manager</div>
+    <div class="by">Chop etdi: Abdullokh Ibragimov</div>
+    <div class="role">Asoschi IT jamoasi · Loyiha menejeri</div>
   </div>
 
   <div class="foot">
-    <span>© ${now.getFullYear()} Asoschi IT</span>
-    <span>Confidential · internal use only</span>
+    <span>© ${now.getFullYear()} Asoschi IT jamoasi</span>
+    <span>Maxfiy · faqat ichki foydalanish uchun</span>
   </div>
 
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };</script>
