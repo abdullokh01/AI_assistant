@@ -1,11 +1,12 @@
 // Telegram Bot Integration Service - AI Project Intelligence Platform
 // Path: src/lib/core/infrastructure/telegram.ts
 
-import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository, MemoryRepository } from './supabase';
+import { TelegramRepository, ProjectRepository, ActivityRepository, SettingsRepository, MemoryRepository, TaskRepository, RiskRepository, DecisionRepository, EmailRepository, QuestionRepository } from './supabase';
 import { TelegramChat } from '../domain/types';
 import { supabaseAdmin } from '../../shared/supabase-client';
 import { TrelloService } from './trello';
 import { EmailService } from './email';
+import { ClaudeService } from './claude';
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const isMock = !botToken;
@@ -19,6 +20,12 @@ export class TelegramBotService {
   private activityRepo = new ActivityRepository();
   private settingsRepo = new SettingsRepository();
   private memoryRepo = new MemoryRepository();
+  private taskRepo = new TaskRepository();
+  private riskRepo = new RiskRepository();
+  private decisionRepo = new DecisionRepository();
+  private emailRepo = new EmailRepository();
+  private questionRepo = new QuestionRepository();
+  private claudeService = new ClaudeService();
 
   private getApiUrl(method: string) {
     return `https://api.telegram.org/bot${botToken}/${method}`;
@@ -201,6 +208,8 @@ export class TelegramBotService {
     } else if (text.startsWith('/sync')) {
       // Sync chat trigger
       await this.handleChatSyncCommand(chatId, text);
+    } else if (text.startsWith('/report')) {
+      await this.handleReportCommand(chatId);
     } else if (isGroup) {
       // Group chat activity tracking
       // Log messages to activity log to allow intelligence audits
@@ -291,7 +300,7 @@ export class TelegramBotService {
 
   // Welcome response
   private async sendWelcomeMessage(chatId: number, isGroup: boolean) {
-    const text = `🚀 *Welcome to AI Project OS!*\n\nI am the intelligent agent running project delivery operations. Connect me to your Telegram Group chats, sync Trello, and let me handle project health audits, email classification, and CEO daily executive summaries.`;
+    const text = `🚀 *Welcome to AI Project OS!*\n\nI am the intelligent agent running project delivery operations. Connect me to your Telegram Group chats, sync Trello, and let me handle project health audits, email classification, and CEO daily executive summaries.\n\n*Commands:*\n/report — today's executive report\n/sync — sync Trello + email\n/settings — projects & connections`;
     await this.sendMessage(chatId, text, this.getMainMenuMarkup());
   }
 
@@ -471,6 +480,103 @@ export class TelegramBotService {
     await this.editMessageText(chatId, messageId, lines.join('\n'), {
       inline_keyboard: [[{ text: '⬅️ Back', callback_data: `proj_view_${projectId}` }]],
     });
+  }
+
+  // Generates the daily executive report for the chat's linked project (or the
+  // first active project) and sends it into the chat.
+  private async handleReportCommand(chatId: number) {
+    // Resolve which project this chat reports on.
+    const chatConfig = await this.telegramRepo.getByChatId(chatId);
+    let projectId = chatConfig?.projectId;
+    if (!projectId || projectId === SYSTEM_PROJECT_ID) {
+      const { data: projects } = await supabaseAdmin
+        .from('projects')
+        .select('id')
+        .eq('status', 'active')
+        .neq('id', SYSTEM_PROJECT_ID)
+        .limit(1);
+      projectId = projects?.[0]?.id;
+    }
+    if (!projectId) {
+      await this.sendMessage(chatId, '❌ No project found. Create/connect a project first.');
+      return;
+    }
+
+    await this.sendMessage(chatId, '⏳ Generating today\'s executive report…');
+
+    try {
+      const project = await this.projectRepo.getById(projectId);
+      if (!project) {
+        await this.sendMessage(chatId, '❌ Project not found.');
+        return;
+      }
+
+      const tasks = await this.taskRepo.listByProject(projectId);
+      const today = new Date().toISOString().split('T')[0];
+      const onToday = (d?: Date) => !!d && new Date(d).toISOString().split('T')[0] === today;
+
+      const completed = tasks.filter((t) => t.status === 'Done' && onToday(t.sourceUpdatedAt));
+      const inProgress = tasks.filter((t) => t.status === 'In Progress');
+      const blocked = tasks.filter((t) => t.status === 'Blocked');
+      const risks = await this.riskRepo.listActive(projectId);
+      const decisions = await this.decisionRepo.listByProject(projectId);
+      const activities = await this.activityRepo.listRecent(projectId, 30);
+      const emails = await this.emailRepo.getUnreadEmails(projectId);
+      const questions = await this.questionRepo.listOpen(projectId);
+
+      const report = await this.claudeService.generateDailyReport(
+        project, completed, inProgress, blocked, risks, decisions, activities, emails, questions,
+        project.healthScore, project.confidenceScore
+      );
+
+      await this.sendLongPlain(chatId, report);
+    } catch (e: any) {
+      await this.sendMessage(chatId, `❌ Report failed: ${e.message}`);
+    }
+  }
+
+  // Sends long AI text into Telegram: strips markdown the Bot API can't render
+  // and splits into ≤4000-char chunks.
+  private async sendLongPlain(chatId: number, text: string) {
+    const clean = text
+      .replace(/^#{1,6}\s*/gm, '')     // drop ## headers markers
+      .replace(/\*\*/g, '')             // drop bold markers
+      .replace(/^\s*---+\s*$/gm, '—')   // dividers
+      .trim();
+
+    const chunks: string[] = [];
+    let buf = '';
+    for (const line of clean.split('\n')) {
+      if (buf.length + line.length + 1 > 4000) {
+        chunks.push(buf);
+        buf = '';
+      }
+      buf += line + '\n';
+    }
+    if (buf.trim()) chunks.push(buf);
+
+    for (const chunk of chunks) {
+      await this.sendPlainMessage(chatId, chunk);
+    }
+  }
+
+  // Plain-text send (no Markdown parse_mode) — safe for arbitrary AI output.
+  private async sendPlainMessage(chatId: number, text: string): Promise<boolean> {
+    if (isMock) {
+      console.log(`[TELEGRAM BOT MOCK] Plain to ${chatId}: ${text.slice(0, 80)}…`);
+      return true;
+    }
+    try {
+      const res = await fetch(this.getApiUrl('sendMessage'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text }),
+      });
+      return res.ok;
+    } catch (e) {
+      console.error('Failed to send plain Telegram message:', e);
+      return false;
+    }
   }
 
   // Runs a real sync of Trello + Email integrations for a project and
