@@ -724,10 +724,23 @@ main h3.font-extrabold::before,
   padding: 0.1rem 0.4rem;
   border: 1px solid transparent;
   transition: all 0.15s ease;
+  line-height: 1;
 }
 .fin-del:hover {
   color: #ff3366;
   border-color: rgba(255, 51, 102, 0.4);
+}
+.fin-restore {
+  color: var(--accent-green);
+  font-size: 0.9rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid rgba(0, 255, 170, 0.4);
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.fin-restore:hover {
+  background: rgba(0, 255, 170, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
 }
 
 .fin-proj-chip {

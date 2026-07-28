@@ -53,6 +53,59 @@ const colorFor = (name: string, list: string[]) => PROJECT_COLORS[list.indexOf(n
 const fmtUZS = (n: number) => new Intl.NumberFormat('en-US').format(Math.round(n));
 const fmtM = (n: number) => `${(n / 1_000_000).toFixed(1)}M`;
 
+// Recompute all aggregates from the raw rows/expenses, dropping any project the
+// user has excluded — so excluded projects vanish from every total, chart and
+// the report, but stay restorable in the Budget-vs-Actual list.
+function buildAgg(
+  rows: Row[],
+  expenses: Expense[],
+  budgetsMap: Record<string, number>,
+  excluded: Set<string>
+): Aggregates {
+  const inc = (p: string) => !excluded.has(p);
+  const byProject: Record<string, number> = {};
+  const byMonth: Record<string, number> = {};
+  let salaryTotal = 0;
+  let expenseTotal = 0;
+
+  for (const r of rows) {
+    if (!inc(r.project)) continue;
+    const a = Number(r.amount_uzs);
+    salaryTotal += a;
+    byProject[r.project] = (byProject[r.project] || 0) + a;
+    const k = `${r.period_year}-${String(r.period_month).padStart(2, '0')}`;
+    byMonth[k] = (byMonth[k] || 0) + a;
+  }
+  for (const e of expenses) {
+    if (!inc(e.project)) continue;
+    const a = Number(e.amount_uzs);
+    expenseTotal += a;
+    byProject[e.project] = (byProject[e.project] || 0) + a;
+    const k = String(e.spent_date).slice(0, 7);
+    byMonth[k] = (byMonth[k] || 0) + a;
+  }
+
+  const union = Array.from(new Set([...Object.keys(byProject), ...Object.keys(budgetsMap).filter(inc)]));
+  const budgetStatus = union
+    .map((project) => {
+      const spent = byProject[project] || 0;
+      const budget = budgetsMap[project] ?? null;
+      const remaining = budget == null ? null : budget - spent;
+      const pct = budget && budget > 0 ? (spent / budget) * 100 : null;
+      return { project, budget, spent, remaining, pct, over: budget != null && spent > budget };
+    })
+    .sort((a, b) => b.spent - a.spent);
+
+  return {
+    total: salaryTotal + expenseTotal,
+    salaryTotal,
+    expenseTotal,
+    byProject: Object.entries(byProject).map(([project, amount]) => ({ project, amount })).sort((a, b) => b.amount - a.amount),
+    byMonth: Object.entries(byMonth).map(([month, amount]) => ({ month, amount })).sort((a, b) => a.month.localeCompare(b.month)),
+    budgetStatus,
+  };
+}
+
 export default function FinanceWidget() {
   const [rows, setRows] = useState<Row[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -63,6 +116,35 @@ export default function FinanceWidget() {
   const [saving, setSaving] = useState(false);
   const [savingExp, setSavingExp] = useState(false);
   const [budgetEdits, setBudgetEdits] = useState<Record<string, string>>({});
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+
+  // Excluded projects persist locally so the choice survives reloads.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('fin_excluded');
+      if (raw) setExcluded(new Set(JSON.parse(raw)));
+    } catch { /* ignore */ }
+  }, []);
+  const toggleExclude = (project: string) => {
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      next.has(project) ? next.delete(project) : next.add(project);
+      try { localStorage.setItem('fin_excluded', JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  // Budgets keyed by project (from the server aggregate) + the exclusion-filtered
+  // view used for every total, chart and the report.
+  const budgetsMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    (agg?.budgetStatus || []).forEach((b) => { if (b.budget != null) m[b.project] = b.budget; });
+    return m;
+  }, [agg]);
+  const view = useMemo(
+    () => (agg ? buildAgg(rows, expenses, budgetsMap, excluded) : null),
+    [agg, rows, expenses, budgetsMap, excluded]
+  );
 
   const now = new Date();
   const [form, setForm] = useState({
@@ -149,7 +231,7 @@ export default function FinanceWidget() {
   // (light, teal→green gradient header, clean white cards) and open the print
   // dialog so it can be saved as PDF.
   const downloadReport = () => {
-    if (!agg) return;
+    if (!view) return;
     const UZ_MONTHS = ['', 'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
     const UZ_SHORT = ['', 'Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
     const now = new Date();
@@ -158,11 +240,11 @@ export default function FinanceWidget() {
 
     // Reporting period from the first→last month present in the ledger.
     const uzMonthYear = (key: string) => `${UZ_MONTHS[Number(key.slice(5))]} ${key.slice(0, 4)}`;
-    const firstMonth = agg.byMonth[0]?.month;
-    const lastMonth = agg.byMonth[agg.byMonth.length - 1]?.month;
+    const firstMonth = view.byMonth[0]?.month;
+    const lastMonth = view.byMonth[view.byMonth.length - 1]?.month;
     const periodLabel = firstMonth && lastMonth ? `${uzMonthYear(firstMonth)} — ${uzMonthYear(lastMonth)}` : '';
 
-    const budgetRows = agg.budgetStatus
+    const budgetRows = view.budgetStatus
       .map((b) => {
         const status = b.budget == null || b.budget === 0
           ? '<span class="muted">—</span>'
@@ -178,8 +260,8 @@ export default function FinanceWidget() {
       })
       .join('');
 
-    const monthMax = agg.byMonth.length ? Math.max(...agg.byMonth.map((m) => m.amount)) : 1;
-    const monthCols = agg.byMonth
+    const monthMax = view.byMonth.length ? Math.max(...view.byMonth.map((m) => m.amount)) : 1;
+    const monthCols = view.byMonth
       .map(
         (m) => `<div class="mcol">
           <span class="mval">${fmtM(m.amount)}</span>
@@ -239,10 +321,10 @@ export default function FinanceWidget() {
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="l">Umumiy xarajat</div><div class="v">${fmtUZS(agg.total)}</div><div class="u">so'm · jami</div></div>
-    <div class="kpi"><div class="l">Oyliklar</div><div class="v">${fmtM(agg.salaryTotal)}</div><div class="u">ish haqi</div></div>
-    <div class="kpi"><div class="l">Boshqa xarajatlar</div><div class="v">${fmtM(agg.expenseTotal)}</div><div class="u">xarajatlar</div></div>
-    <div class="kpi"><div class="l">Loyihalar</div><div class="v">${projectNames.length}</div><div class="u">loyihalar soni</div></div>
+    <div class="kpi"><div class="l">Umumiy xarajat</div><div class="v">${fmtUZS(view.total)}</div><div class="u">so'm · jami</div></div>
+    <div class="kpi"><div class="l">Oyliklar</div><div class="v">${fmtM(view.salaryTotal)}</div><div class="u">ish haqi</div></div>
+    <div class="kpi"><div class="l">Boshqa xarajatlar</div><div class="v">${fmtM(view.expenseTotal)}</div><div class="u">xarajatlar</div></div>
+    <div class="kpi"><div class="l">Loyihalar</div><div class="v">${view.byProject.length}</div><div class="u">loyihalar soni</div></div>
   </div>
 
   <div class="section-title">Reja va Haqiqiy · loyihalar bo'yicha</div>
@@ -353,8 +435,8 @@ export default function FinanceWidget() {
     return `${MONTH_LABELS[Number(m)]} ${y}`;
   };
 
-  const projMax = agg && agg.byProject.length ? agg.byProject[0].amount : 1;
-  const monthMax = agg && agg.byMonth.length ? Math.max(...agg.byMonth.map((m) => m.amount)) : 1;
+  const projMax = view && view.byProject.length ? view.byProject[0].amount : 1;
+  const monthMax = view && view.byMonth.length ? Math.max(...view.byMonth.map((m) => m.amount)) : 1;
 
   return (
     <div className="space-y-6">
@@ -372,9 +454,9 @@ export default function FinanceWidget() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-panel p-5">
           <span className="fin-kpi-label">Total Spend · All Time</span>
-          <span className="fin-kpi-value">{agg ? fmtUZS(agg.total) : '—'}</span>
+          <span className="fin-kpi-value">{view ? fmtUZS(view.total) : '—'}</span>
           <span className="fin-kpi-unit">
-            {agg ? `UZS · payroll ${fmtM(agg.salaryTotal)} · other ${fmtM(agg.expenseTotal)}` : 'UZS'}
+            {view ? `UZS · payroll ${fmtM(view.salaryTotal)} · other ${fmtM(view.expenseTotal)}` : 'UZS'}
           </span>
         </div>
         <div className="glass-panel p-5">
@@ -406,8 +488,10 @@ export default function FinanceWidget() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h3 className="font-extrabold text-base text-slate-200">Budget vs Actual · by Project</h3>
           {(() => {
-            const totalBudget = (agg?.budgetStatus || []).reduce((s, b) => s + (b.budget || 0), 0);
-            const totalSpent = agg?.total || 0;
+            // Totals compare only projects that have a budget set (and aren't excluded).
+            const budgeted = (view?.budgetStatus || []).filter((b) => b.budget != null && b.budget > 0);
+            const totalBudget = budgeted.reduce((s, b) => s + (b.budget || 0), 0);
+            const totalSpent = budgeted.reduce((s, b) => s + b.spent, 0);
             const diff = totalBudget - totalSpent;
             const over = totalBudget > 0 && totalSpent > totalBudget;
             const pct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : null;
@@ -442,9 +526,17 @@ export default function FinanceWidget() {
             const editing = budgetEdits[b.project] ?? (b.budget != null ? String(b.budget) : '');
             const pct = b.pct;
             const barColor = b.over ? '#ff3366' : pct != null && pct > 85 ? '#ff9f1c' : '#00ffaa';
+            const isEx = excluded.has(b.project);
             return (
-              <div key={b.project} className="fin-budget-row">
+              <div key={b.project} className="fin-budget-row" style={isEx ? { opacity: 0.4 } : undefined}>
                 <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    onClick={() => toggleExclude(b.project)}
+                    title={isEx ? 'Restore to totals' : 'Exclude from totals & report'}
+                    className={isEx ? 'fin-restore' : 'fin-del'}
+                  >
+                    {isEx ? '↺' : '✕'}
+                  </button>
                   <span className="fin-proj-chip shrink-0" style={{ color: colorFor(b.project, projectNames), borderColor: `${colorFor(b.project, projectNames)}55` }}>
                     {b.project}
                   </span>
@@ -488,7 +580,7 @@ export default function FinanceWidget() {
         <div className="glass-panel p-6 space-y-4">
           <h3 className="font-extrabold text-base text-slate-200">Spend by Project</h3>
           <div className="space-y-3">
-            {agg?.byProject.map((p) => (
+            {view?.byProject.map((p) => (
               <div key={p.project} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-mono text-slate-300">{p.project}</span>
@@ -513,7 +605,7 @@ export default function FinanceWidget() {
         <div className="glass-panel p-6 space-y-4">
           <h3 className="font-extrabold text-base text-slate-200">Monthly Spend Trend</h3>
           <div className="fin-trend">
-            {agg?.byMonth.map((m) => (
+            {view?.byMonth.map((m) => (
               <div key={m.month} className="fin-trend-col" title={`${monthKeyLabel(m.month)} · ${fmtUZS(m.amount)} UZS`}>
                 <span className="fin-trend-val">{fmtM(m.amount)}</span>
                 <div className="fin-trend-bar" style={{ height: `${Math.max((m.amount / monthMax) * 100, 4)}%` }} />
