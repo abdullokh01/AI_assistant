@@ -403,7 +403,37 @@ export default function FinanceWidget() {
 
       {/* BUDGET vs ACTUAL */}
       <div className="glass-panel p-6 space-y-4">
-        <h3 className="font-extrabold text-base text-slate-200">Budget vs Actual · by Project</h3>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h3 className="font-extrabold text-base text-slate-200">Budget vs Actual · by Project</h3>
+          {(() => {
+            const totalBudget = (agg?.budgetStatus || []).reduce((s, b) => s + (b.budget || 0), 0);
+            const totalSpent = agg?.total || 0;
+            const diff = totalBudget - totalSpent;
+            const over = totalBudget > 0 && totalSpent > totalBudget;
+            const pct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : null;
+            const c = over ? '#ff3366' : pct != null && pct > 85 ? '#ff9f1c' : '#00ffaa';
+            return (
+              <div className="fin-total-bar">
+                <div className="fin-total-cell">
+                  <span className="fin-total-l">Total Budget</span>
+                  <span className="fin-total-v">{totalBudget > 0 ? fmtUZS(totalBudget) : '—'}</span>
+                </div>
+                <div className="fin-total-cell">
+                  <span className="fin-total-l">Total Actual</span>
+                  <span className="fin-total-v">{fmtUZS(totalSpent)}</span>
+                </div>
+                {totalBudget > 0 && (
+                  <div className="fin-total-cell">
+                    <span className="fin-total-l">{over ? 'Over' : 'Remaining'}</span>
+                    <span className="fin-total-v" style={{ color: c }}>
+                      {over ? `+${fmtUZS(Math.abs(diff))} · +${Math.round(pct! - 100)}%` : `${fmtUZS(diff)} · ${Math.round(pct!)}%`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
         <p className="text-[11px] text-slate-500 font-mono -mt-2">
           Type a budget for any project and press Enter. Spend = salaries + expenses.
         </p>

@@ -677,6 +677,35 @@ main h3.font-extrabold::before,
 }
 .fin-table tbody tr:hover td { background: rgba(0, 229, 255, 0.03); }
 
+.fin-total-bar {
+  display: flex;
+  gap: 1px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+}
+.fin-total-cell {
+  background: #070d19;
+  padding: 0.5rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 110px;
+}
+.fin-total-l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+.fin-total-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #eafaff;
+  font-variant-numeric: tabular-nums;
+}
+
 .fin-budget-row {
   display: grid;
   grid-template-columns: 130px 180px 1fr 200px;
